@@ -5,18 +5,30 @@ import ScheduleVisitModal from '../components/ScheduleVisitModal'
 import { supabase } from '../lib/supabase'
 
 const fmt = (n) => n ? `$${Number(n).toLocaleString()}` : '—'
+const fmtRequired = (n) => `$${Number(n || 0).toLocaleString()}`
+
+function calcMonthlyTarget(annualTarget, retroSales, wonValue) {
+  const now = new Date()
+  const monthsLeft = 12 - now.getMonth()
+  const remaining = Math.max(0, annualTarget - retroSales - wonValue)
+  return monthsLeft > 0 ? Math.round(remaining / monthsLeft) : 0
+}
 
 export default function AgentDashboard({ session }) {
   const [leads, setLeads] = useState([])
   const [perf, setPerf] = useState(null)
+  const [agent, setAgent] = useState(null)
   const [showAdd, setShowAdd] = useState(false)
   const [schedLead, setSchedLead] = useState(null)
   const [filter, setFilter] = useState('active')
 
   const load = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
     const [l, p] = await Promise.all([getMyLeads(), getMyPerformance()])
+    const { data: ag } = await supabase.from('agents').select('*').eq('id', user.id).single()
     setLeads(l)
     setPerf(p)
+    setAgent(ag)
   }
 
   useEffect(() => { load() }, [])
@@ -34,15 +46,18 @@ export default function AgentDashboard({ session }) {
     return true
   })
 
-  const monthlyPct = perf
-    ? Math.min(100, Math.round((perf.won_value / perf.monthly_target) * 100)) || 0
-    : 0
+  const annualTarget  = Number(agent?.annual_target || 0)
+  const retroSales    = Number(agent?.retro_sales || 0)
+  const wonValue      = Number(perf?.won_value || 0)
+  const totalProgress = retroSales + wonValue
+  const annualPct     = annualTarget > 0 ? Math.min(100, Math.round((totalProgress / annualTarget) * 100)) : 0
+  const dynamicMonthly = calcMonthlyTarget(annualTarget, retroSales, wonValue)
+  const monthlyPct    = dynamicMonthly > 0 ? Math.min(100, Math.round((wonValue / dynamicMonthly) * 100)) : 0
 
   const agentName = session.user.user_metadata?.full_name?.split(' ')[0] || 'סוכן'
 
   return (
     <div className="app-shell" dir="rtl">
-      {/* Header */}
       <div className="hero">
         <div className="hero-top">
           <div>
@@ -54,22 +69,40 @@ export default function AgentDashboard({ session }) {
           </button>
         </div>
 
-        {perf && (
+        {agent && (
           <div className="goal-card">
-            <div className="goal-row">
-              <div>
-                <div className="goal-label">יעד חודשי</div>
-                <div className="goal-value">{fmt(perf.won_value)} <span className="goal-of">/ {fmt(perf.monthly_target)}</span></div>
+            {/* יעד שנתי — גדול ובולט */}
+            <div style={{textAlign:'center', marginBottom:12}}>
+              <div className="goal-label">יעד שנתי</div>
+              <div style={{fontSize:32, fontWeight:700, color:'white', lineHeight:1.1}}>
+                {fmtRequired(totalProgress)}
               </div>
-              <div style={{textAlign:'left'}}>
-                <div className="goal-label">לידים פעילים</div>
-                <div className="goal-value" style={{fontSize:28}}>{perf.active_leads}</div>
+              <div style={{fontSize:14, opacity:0.8, marginTop:2}}>
+                מתוך {fmtRequired(annualTarget)}
               </div>
+              <div className="progress-track" style={{marginTop:8}}>
+                <div className="progress-bar" style={{width: annualPct + '%'}} />
+              </div>
+              <div className="progress-label">{annualPct}% מהיעד השנתי</div>
             </div>
-            <div className="progress-track">
-              <div className="progress-bar" style={{width: monthlyPct + '%'}} />
+
+            {/* יעד חודשי */}
+            <div style={{borderTop:'1px solid rgba(255,255,255,0.2)', paddingTop:10, marginTop:4}}>
+              <div className="goal-row">
+                <div>
+                  <div className="goal-label">יעד חודשי נוכחי</div>
+                  <div className="goal-value" style={{fontSize:20}}>{fmt(wonValue)} <span className="goal-of">/ {fmtRequired(dynamicMonthly)}</span></div>
+                </div>
+                <div style={{textAlign:'left'}}>
+                  <div className="goal-label">לידים פעילים</div>
+                  <div className="goal-value" style={{fontSize:28}}>{perf?.active_leads || 0}</div>
+                </div>
+              </div>
+              <div className="progress-track">
+                <div className="progress-bar" style={{width: monthlyPct + '%'}} />
+              </div>
+              <div className="progress-label">{monthlyPct}% מהיעד החודשי</div>
             </div>
-            <div className="progress-label">{monthlyPct}% מהיעד</div>
           </div>
         )}
 
@@ -87,7 +120,6 @@ export default function AgentDashboard({ session }) {
         </div>
       </div>
 
-      {/* Filter tabs */}
       <div className="tab-row">
         {[
           {key:'active', label:'פעיל'},
@@ -101,7 +133,6 @@ export default function AgentDashboard({ session }) {
         ))}
       </div>
 
-      {/* Lead list */}
       <div className="lead-list">
         {visibleLeads.length === 0 && (
           <div className="empty-state">אין לידים להצגה</div>
@@ -127,8 +158,6 @@ export default function AgentDashboard({ session }) {
                   📅 {new Date(lead.visit_datetime).toLocaleDateString('he-IL', { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}
                 </div>
               )}
-
-              {/* Stage actions */}
               <div className="lead-actions">
                 {lead.stage === 'incoming_call' && (
                   <button className="btn-action" onClick={() => setSchedLead(lead)}>
@@ -152,10 +181,8 @@ export default function AgentDashboard({ session }) {
         })}
       </div>
 
-      {/* FAB */}
       <button className="fab" onClick={() => setShowAdd(true)}>+</button>
 
-      {/* Modals */}
       {showAdd && (
         <AddLeadModal onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />
       )}
