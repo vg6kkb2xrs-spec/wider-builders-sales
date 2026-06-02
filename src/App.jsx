@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { supabase, signInWithGoogle } from './lib/supabase'
 import AgentDashboard from './pages/AgentDashboard'
+import ManagerDashboard from './pages/ManagerDashboard'
 import './index.css'
+
+const MANAGER_EMAILS = ['israel944@gmail.com']
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -43,5 +46,6 @@ export default function App() {
     </div>
   )
 
-  return <AgentDashboard session={session} />
+    const isManager = MANAGER_EMAILS.includes(session.user.email)
+  return isManager ? <ManagerDashboard session={session} /> : <AgentDashboard session={session} />
 }
