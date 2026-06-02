@@ -6,14 +6,12 @@ export const supabase = createClient(
 )
 
 export const STAGES = [
-  { key: 'incoming_call',   label: 'שיחה נכנסת',     color: '#185FA5', bg: '#E6F1FB', next: 'visit_scheduled', nextLabel: 'קבע ביקור', skipTo: 'proposal_sent', skipLabel: 'דלג לתמחור' },
-  { key: 'visit_scheduled', label: 'ביקור מתוכנן',    color: '#854F0B', bg: '#FAEEDA', next: 'proposal_sent',   nextLabel: 'שלח למשרד להצעה' },
-  { key: 'proposal_sent',   label: 'הצעה הוגשה',      color: '#534AB7', bg: '#EEEDFE', next: 'negotiation',     nextLabel: 'התחל מו"מ' },
-  { key: 'negotiation',     label: 'במשא ומתן',        color: '#993C1D', bg: '#FAECE7', next: 'closed_won',      nextLabel: '🎉 נסגר! קבל מקדמה' },
-  { key: 'in_progress',     label: 'בביצוע',           color: '#0F6E56', bg: '#E1F5EE' },
-  { key: 'closed_won',      label: 'בוצע ✅',          color: '#3B6D11', bg: '#EAF3DE' },
-  { key: 'closed_lost',     label: 'אבוד',             color: '#A32D2D', bg: '#FCEBEB' },
-  { key: 'frozen',          label: '🧊 קפוא',          color: '#5F5E5A', bg: '#F1EFE8' },
+  { key: 'incoming_call',   label: 'חדש',           color: '#185FA5', bg: '#E6F1FB', next: 'in_progress',   nextLabel: 'העבר לטיפול' },
+  { key: 'in_progress',     label: 'בתהליך',         color: '#854F0B', bg: '#FAEEDA', next: 'proposal_sent', nextLabel: 'הצעה נשלחה' },
+  { key: 'proposal_sent',   label: 'נשלחה הצעה',     color: '#534AB7', bg: '#EEEDFE', next: 'closed_won',    nextLabel: '🎉 נסגר! קבל מקדמה' },
+  { key: 'closed_won',      label: 'נסגר ✅',         color: '#3B6D11', bg: '#EAF3DE' },
+  { key: 'closed_lost',     label: 'אבוד',            color: '#A32D2D', bg: '#FCEBEB' },
+  { key: 'frozen',          label: '🧊 קפוא',         color: '#5F5E5A', bg: '#F1EFE8' },
 ]
 
 export const stageInfo = (key) => STAGES.find(s => s.key === key) || STAGES[0]
