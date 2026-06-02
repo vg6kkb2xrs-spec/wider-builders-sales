@@ -153,17 +153,17 @@ body {
 
 /* ── FAB ── */
 .fab {
-  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-  width: 60px; height: 60px; border-radius: 50%;
-  background: var(--teal); color: white; font-size: 30px; line-height: 1;
+  position: fixed; bottom: 32px; right: 24px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--teal); color: white; font-size: 28px; line-height: 1;
   border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(29,158,117,0.4);
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.15s;
-  -webkit-transform: translateX(-50%);
-  will-change: transform;
+  will-change: auto;
   z-index: 50;
+  -webkit-tap-highlight-color: transparent;
 }
-.fab:active { transform: translateX(-50%) scale(0.93); -webkit-transform: translateX(-50%) scale(0.93); }
+.fab:active { transform: scale(0.93); }
 
 /* ── Modal ── */
 .modal-overlay {
