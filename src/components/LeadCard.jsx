@@ -90,8 +90,8 @@ export default function LeadCard({ lead, onUpdate, onSchedule }) {
 
   return (
     <div className="lead-card" style={{ borderRight: isStale ? '3px solid #E24B4A' : undefined }}>
-      
-      {/* Header — תמיד מוצג */}
+
+      {/* Header */}
       <div onClick={() => !editing && setExpanded(e => !e)} style={{ cursor: editing ? 'default' : 'pointer' }}>
         <div className="lead-header">
           <div style={{ flex: 1 }}>
@@ -107,15 +107,17 @@ export default function LeadCard({ lead, onUpdate, onSchedule }) {
         <div className="lead-meta" style={{ marginTop: 4 }}>
           {lead.phone && <span>📞 {lead.phone}</span>}
           {lead.estimated_value && <span>💰 {fmt(lead.estimated_value)}</span>}
+          {lead.visit_datetime && (
+            <span>📅 {new Date(lead.visit_datetime).toLocaleDateString('he-IL', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
+          )}
         </div>
       </div>
 
       {/* Expanded */}
       {expanded && (
         <div style={{ marginTop: 12 }}>
-          
+
           {editing ? (
-            /* מצב עריכה */
             <div>
               {[
                 { key: 'project_address', label: 'כתובת הפרויקט' },
@@ -152,7 +154,6 @@ export default function LeadCard({ lead, onUpdate, onSchedule }) {
               </div>
             </div>
           ) : (
-            /* מצב תצוגה */
             <div>
               {lead.description && <div className="lead-desc">{lead.description}</div>}
 
@@ -198,16 +199,26 @@ export default function LeadCard({ lead, onUpdate, onSchedule }) {
 
               {/* כפתורי שלב */}
               {!showNoteInput && !isClosed && (
-                <div style={{ marginTop:10, display:'flex', flexDirection:'column', gap:8 }}>
+                <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {lead.stage === 'frozen' ? (
                     <button className="btn-primary" onClick={handleUnfreeze} disabled={saving}>🔥 הפשר ליד</button>
                   ) : (
                     <>
+                      {/* כפתור קבע פגישה — בכל שלב */}
+                      <button
+                        className="btn-action"
+                        style={{ background: '#E6F1FB', color: '#185FA5', fontSize: 14, fontWeight: 500 }}
+                        onClick={() => onSchedule(lead)}
+                      >
+                        📅 {lead.visit_datetime ? 'עדכן פגישה ביומן' : 'קבע פגישה ← יומן'}
+                      </button>
+
                       {s.next && (
                         <button className="btn-primary" onClick={handleStageNext} disabled={saving}>
                           {s.nextLabel} →
                         </button>
                       )}
+
                       <div style={{ display:'flex', gap:8 }}>
                         <button className="btn-action" style={{ flex:1, fontSize:12, background:'#F1EFE8', color:'#5F5E5A' }} onClick={handleFreeze} disabled={saving}>
                           🧊 הקפא
