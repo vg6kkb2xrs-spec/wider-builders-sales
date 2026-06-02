@@ -4,7 +4,7 @@ import AgentDashboard from './pages/AgentDashboard'
 import ManagerDashboard from './pages/ManagerDashboard'
 import './index.css'
 
-const MANAGER_EMAILS = ['israel944@gmail.com']
+const MANAGER_EMAILS = ['office@widerbuilders.com']
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -31,7 +31,7 @@ export default function App() {
     <div className="login-screen">
       <div className="login-card">
         <div className="login-logo">🏗️</div>
-        <h1>Brooklyn Sales</h1>
+        <h1>Wider Builders</h1>
         <p>מערכת ניהול לידים ויעדי מכירות</p>
         <button className="btn-google" onClick={signInWithGoogle}>
           <svg width="18" height="18" viewBox="0 0 18 18">
@@ -46,6 +46,8 @@ export default function App() {
     </div>
   )
 
-    const isManager = MANAGER_EMAILS.includes(session.user.email)
-  return isManager ? <ManagerDashboard session={session} /> : <AgentDashboard session={session} />
+  const isManager = MANAGER_EMAILS.includes(session.user.email)
+  return isManager
+    ? <ManagerDashboard session={session} />
+    : <AgentDashboard session={session} />
 }
