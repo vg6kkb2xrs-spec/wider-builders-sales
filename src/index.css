@@ -29,6 +29,8 @@ body {
   margin: 0 auto;
   min-height: 100dvh;
   position: relative;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
 }
 
 /* ── Loading ── */
@@ -116,7 +118,7 @@ body {
 .tab--active { color: var(--teal); border-bottom-color: var(--teal); font-weight: 500; }
 
 /* ── Lead list ── */
-.lead-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.lead-list { padding: 12px 16px 100px; display: flex; flex-direction: column; gap: 10px; }
 
 .lead-card {
   background: var(--card); border-radius: var(--radius);
@@ -157,8 +159,11 @@ body {
   border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(29,158,117,0.4);
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.15s;
+  -webkit-transform: translateX(-50%);
+  will-change: transform;
+  z-index: 50;
 }
-.fab:active { transform: translateX(-50%) scale(0.93); }
+.fab:active { transform: translateX(-50%) scale(0.93); -webkit-transform: translateX(-50%) scale(0.93); }
 
 /* ── Modal ── */
 .modal-overlay {
@@ -211,3 +216,4 @@ body {
   border-radius: 8px; padding: 10px 12px; margin: 12px 0;
   border-right: 3px solid var(--teal);
 }
+
