@@ -6,19 +6,13 @@ import ScheduleVisitModal from '../components/ScheduleVisitModal'
 import LeadCard from '../components/LeadCard'
 import MeetingsView from './MeetingsView'
 
-const fmtK = (n) => {
-  const v = Number(n||0)
-  return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}K`:`$${v}`
-}
-const fmt = (n) => n?`$${Number(n).toLocaleString()}`:'—'
-const daysSince = (d) => d?Math.floor((Date.now()-new Date(d).getTime())/86400000):null
+const fmtK=(n)=>{const v=Number(n||0);return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}K`:`$${v}`}
+const fmt=(n)=>n?`$${Number(n).toLocaleString()}`:'—'
+const daysSince=(d)=>d?Math.floor((Date.now()-new Date(d).getTime())/86400000):null
 
-function calcMonthly(annual,retro,won){
-  const left=12-new Date().getMonth()
-  return left>0?Math.round(Math.max(0,annual-retro-won)/left):0
-}
+function calcMonthly(a,r,w){const l=12-new Date().getMonth();return l>0?Math.round(Math.max(0,a-r-w)/l):0}
 
-export default function AgentDashboard({ session }) {
+export default function AgentDashboard({session}){
   const [leads,setLeads]=useState([])
   const [perf,setPerf]=useState(null)
   const [agent,setAgent]=useState(null)
@@ -51,10 +45,10 @@ export default function AgentDashboard({ session }) {
 
   const visible=leads.filter(l=>{
     const mf=filter==='active'?!['completed','closed_lost','frozen'].includes(l.stage):
-              filter==='closed_won'?l.stage==='closed_won':
-              filter==='completed'?l.stage==='completed':
-              filter==='lost'?l.stage==='closed_lost':
-              filter==='frozen'?l.stage==='frozen':true
+      filter==='closed_won'?l.stage==='closed_won':
+      filter==='completed'?l.stage==='completed':
+      filter==='lost'?l.stage==='closed_lost':
+      filter==='frozen'?l.stage==='frozen':true
     const ms=!search||l.project_address.toLowerCase().includes(search.toLowerCase())||l.client_name.toLowerCase().includes(search.toLowerCase())||(l.phone||'').includes(search)
     return mf&&ms
   })
@@ -63,51 +57,52 @@ export default function AgentDashboard({ session }) {
 
   return (
     <div className="app" dir="rtl">
-      <div className="hero">
-        <div className="hero-top">
-          <div><div className="hero-greeting">שלום, {agentName}</div><div className="hero-sub">{new Date().toLocaleDateString('he-IL',{weekday:'long',month:'long',day:'numeric'})}</div></div>
-          <button className="exit-btn" onClick={()=>supabase.auth.signOut()}>⎋</button>
+      {/* HERO */}
+      <div className="h">
+        <div className="h-top">
+          <div><div className="h-name">שלום, {agentName}</div><div className="h-date">{new Date().toLocaleDateString('he-IL',{weekday:'long',month:'long',day:'numeric'})}</div></div>
+          <button className="h-btn" onClick={()=>supabase.auth.signOut()}>⎋</button>
         </div>
         {agent&&<>
-          <div className="annual-box">
-            <div className="annual-amount">{fmtK(total)}</div>
-            <div className="annual-sub">מתוך {fmtK(annual)} שנתי · נשארו {mLeft} חודשים · {annPct}%</div>
-            <div className="prog"><div className="prog-fill" style={{width:annPct+'%'}}/></div>
-          </div>
-          <div className="stats-row">
-            <div className="stat-cell"><div className="stat-n">{fmtK(monthly)}</div><div className="stat-l">יעד חודשי</div></div>
-            <div className="stat-cell"><div className="stat-n">{fmt(won)}</div><div className="stat-l">הושג</div></div>
-            <div className="stat-cell"><div className="stat-n" style={{color:todayM.length>0?'#9FE1CB':'rgba(255,255,255,.35)'}}>{todayM.length}</div><div className="stat-l">פגישות היום</div></div>
+          <div className="h-amt">{fmtK(total)}</div>
+          <div className="h-sub">מתוך {fmtK(annual)} · נשארו {mLeft} חודשים · {annPct}%</div>
+          <div className="h-prog"><div className="h-fill" style={{width:annPct+'%'}}/></div>
+          <div className="h-grid">
+            <div className="h-cell"><div className="h-cell-n">{fmtK(monthly)}</div><div className="h-cell-l">יעד חודשי</div></div>
+            <div className="h-cell"><div className="h-cell-n">{fmt(won)}</div><div className="h-cell-l">הושג</div></div>
+            <div className="h-cell"><div className="h-cell-n" style={{color:todayM.length>0?'#9FE1CB':'rgba(255,255,255,.4)'}}>{todayM.length}</div><div className="h-cell-l">פגישות היום</div></div>
           </div>
         </>}
       </div>
 
+      {/* HOME */}
       {tab==='home'&&<div className="body">
         {todayM.length>0&&(
-          <div className="today-block">
-            <div className="block-header"><div className="block-dot" style={{background:'var(--green)'}}/><div className="block-title" style={{color:'var(--green)'}}>פגישה היום</div></div>
+          <div className="today-card" onClick={()=>setTab('meetings')}>
+            <div className="tc-hdr"><div className="tc-dot"/><div className="tc-ttl">פגישה היום</div></div>
             {todayM.map(l=>(
-              <div key={l.id} className="today-row" onClick={()=>setTab('meetings')}>
-                <div><div className="today-addr">{l.project_address}</div><div className="today-client">{l.client_name}</div></div>
-                <div className="today-time">{new Date(l.visit_datetime).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</div>
+              <div key={l.id} className="tc-row">
+                <div><div className="tc-addr">{l.project_address}</div><div className="tc-client">{l.client_name}</div></div>
+                <div className="tc-time">{new Date(l.visit_datetime).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</div>
               </div>
             ))}
           </div>
         )}
 
         {stale.length>0&&(
-          <div className="urgent-block">
-            <div className="block-header"><div className="block-dot" style={{background:'var(--red)'}}/><div className="block-title" style={{color:'var(--red)'}}>דורש טיפול</div></div>
+          <div className="urg-card">
+            <div className="urg-hdr"><div className="urg-dot"/><div className="urg-ttl">דורש טיפול</div></div>
             {stale.map(l=>(
-              <div key={l.id}>
-                <LeadCard lead={l} onUpdate={load} onSchedule={setSchedLead}/>
+              <div key={l.id} className="urg-row">
+                <div><div className="tc-addr">{l.project_address}</div><div className="tc-client">{l.client_name}</div></div>
+                <div className="urg-days">{daysSince(l.last_contact_at||l.updated_at)} ימים</div>
               </div>
             ))}
           </div>
         )}
 
         {fresh.length>0&&<>
-          <div className="section-hdr">לידים פעילים</div>
+          <div className="sec-hdr">לידים פעילים</div>
           {fresh.map(l=><LeadCard key={l.id} lead={l} onUpdate={load} onSchedule={setSchedLead}/>)}
         </>}
 
@@ -119,11 +114,18 @@ export default function AgentDashboard({ session }) {
             <button className="add-btn" style={{maxWidth:220,margin:'0 auto'}} onClick={()=>setShowAdd(true)}>+ שיחה נכנסת חדשה</button>
           </div>
         )}
-        {leads.length>0&&<div className="add-row"><button className="add-btn" onClick={()=>setShowAdd(true)}><i className="ti ti-phone-incoming" style={{fontSize:17}} aria-hidden="true"/>שיחה נכנסת חדשה</button></div>}
+        {leads.length>0&&(
+          <button className="add-btn" onClick={()=>setShowAdd(true)}>
+            <i className="ti ti-phone-incoming" style={{fontSize:16}} aria-hidden="true"/>
+            שיחה נכנסת חדשה
+          </button>
+        )}
       </div>}
 
+      {/* MEETINGS */}
       {tab==='meetings'&&<MeetingsView agentId={session.user.id} isManager={false}/>}
 
+      {/* ALL LEADS */}
       {tab==='leads'&&<div className="body">
         <input className="search-bar" placeholder="🔍 חפש כתובת, שם, טלפון" value={search} onChange={e=>setSearch(e.target.value)}/>
         <div className="filter-row">
@@ -137,15 +139,22 @@ export default function AgentDashboard({ session }) {
         </div>
       </div>}
 
-      <nav className="bottom-nav">
-        <button className={`nav-btn ${tab==='home'?'on':''}`} onClick={()=>setTab('home')}><i className="ti ti-home nav-icon" aria-hidden="true"/>בית</button>
-        <button className={`nav-btn ${tab==='meetings'?'on':''}`} onClick={()=>setTab('meetings')} style={{position:'relative'}}>
-          <i className="ti ti-calendar nav-icon" aria-hidden="true"/>
-          {todayM.length>0&&<span className="nav-badge">{todayM.length}</span>}
+      {/* BOTTOM NAV */}
+      <nav className="nav">
+        <button className={`nb ${tab==='home'?'on':''}`} onClick={()=>setTab('home')}>
+          <div className="nb-icon"><i className="ti ti-home" aria-hidden="true"/></div>בית
+        </button>
+        <button className={`nb ${tab==='meetings'?'on':''}`} onClick={()=>setTab('meetings')} style={{position:'relative'}}>
+          <div className="nb-icon"><i className="ti ti-calendar" aria-hidden="true"/></div>
+          {todayM.length>0&&<span className="nb-badge">{todayM.length}</span>}
           פגישות
         </button>
-        <button className={`nav-btn ${tab==='leads'?'on':''}`} onClick={()=>setTab('leads')}><i className="ti ti-list nav-icon" aria-hidden="true"/>לידים</button>
-        <button className="nav-btn" onClick={()=>setShowAdd(true)}><i className="ti ti-plus nav-icon" aria-hidden="true"/>הוסף</button>
+        <button className={`nb ${tab==='leads'?'on':''}`} onClick={()=>setTab('leads')}>
+          <div className="nb-icon"><i className="ti ti-list" aria-hidden="true"/></div>לידים
+        </button>
+        <button className="nb" onClick={()=>setShowAdd(true)}>
+          <div className="nb-icon"><i className="ti ti-plus" aria-hidden="true"/></div>הוסף
+        </button>
       </nav>
 
       {showAdd&&<AddLeadModal onClose={()=>setShowAdd(false)} onSaved={()=>{setShowAdd(false);load()}}/>}
