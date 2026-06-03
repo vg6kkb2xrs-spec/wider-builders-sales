@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getMyLeads, getMyPerformance, stageInfo } from '../lib/supabase'
+import { getMyLeads, getMyPerformance } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
 import AddLeadModal from '../components/AddLeadModal'
 import ScheduleVisitModal from '../components/ScheduleVisitModal'
@@ -49,10 +49,10 @@ export default function AgentDashboard({ session }) {
   const monPct  = monthly > 0 ? Math.min(100, Math.round(won / monthly * 100)) : 0
   const mLeft   = 12 - new Date().getMonth()
 
-  const stale   = leads.filter(l => daysSince(l.last_contact_at || l.updated_at) >= 7 && !['completed','closed_lost','frozen'].includes(l.stage))
-  const todayM  = leads.filter(l => l.visit_datetime && new Date(l.visit_datetime).toDateString() === new Date().toDateString())
-  const active  = leads.filter(l => !['completed','closed_lost','frozen'].includes(l.stage))
-  const fresh   = active.filter(l => (daysSince(l.last_contact_at || l.updated_at) || 0) < 7)
+  const stale  = leads.filter(l => (daysSince(l.last_contact_at || l.updated_at)||0) >= 7 && !['completed','closed_lost','frozen'].includes(l.stage))
+  const todayM = leads.filter(l => l.visit_datetime && new Date(l.visit_datetime).toDateString() === new Date().toDateString())
+  const active = leads.filter(l => !['completed','closed_lost','frozen'].includes(l.stage))
+  const fresh  = active.filter(l => (daysSince(l.last_contact_at || l.updated_at)||0) < 7 && !todayM.find(t => t.id === l.id))
 
   const visible = leads.filter(l => {
     const mf =
@@ -93,36 +93,32 @@ export default function AgentDashboard({ session }) {
               </div>
               <div className="progress-label">{annPct}% מהיעד השנתי</div>
             </div>
-            <div style={{borderTop:'1px solid rgba(255,255,255,.2)',paddingTop:8}}>
-              <div className="goal-row">
-                <div>
-                  <div className="goal-label">יעד החודש</div>
-                  <div className="goal-value" style={{fontSize:17}}>{fmt(won)} <span className="goal-of">/ {fmtN(monthly)}</span></div>
-                </div>
-                <div style={{textAlign:'left'}}>
-                  <div className="goal-label">לידים פעילים</div>
-                  <div className="goal-value" style={{fontSize:26}}>{active.length}</div>
-                </div>
+            <div style={{borderTop:'1px solid rgba(255,255,255,.2)',paddingTop:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div>
+                <div className="goal-label">יעד החודש</div>
+                <div style={{fontSize:15,fontWeight:600,color:'white'}}>{fmt(won)} <span style={{fontSize:12,opacity:.75}}>/ {fmtN(monthly)}</span></div>
               </div>
-              <div className="progress-track">
-                <div className="progress-bar" style={{width:monPct+'%'}}/>
+              <div style={{textAlign:'left'}}>
+                <div className="goal-label">פגישות היום</div>
+                <div style={{fontSize:22,fontWeight:700,color: todayM.length > 0 ? 'white' : 'rgba(255,255,255,.4)'}}>{todayM.length} פגישה</div>
               </div>
             </div>
           </div>
         )}
 
+        {/* Stats row */}
         <div className="stat-row">
           <div className="stat-box">
-            <div className="stat-num" style={{color: todayM.length > 0 ? '#5DCAA5' : 'rgba(255,255,255,.4)'}}>{todayM.length}</div>
-            <div className="stat-lbl">📅 היום</div>
+            <div className="stat-num" style={{color:'#5DCAA5'}}>{perf?.won_count||0}</div>
+            <div className="stat-lbl">🏆 סגירות</div>
           </div>
           <div className="stat-box">
-            <div className="stat-num" style={{color: stale.length > 0 ? '#F09595' : 'rgba(255,255,255,.4)'}}>{stale.length}</div>
+            <div className="stat-num" style={{color: stale.length>0 ? '#F09595':'rgba(255,255,255,.4)'}}>{stale.length}</div>
             <div className="stat-lbl">⚠️ ללא מגע</div>
           </div>
           <div className="stat-box">
-            <div className="stat-num" style={{color:'#5DCAA5'}}>{perf?.won_count || 0}</div>
-            <div className="stat-lbl">🏆 סגירות</div>
+            <div className="stat-num">{active.length}</div>
+            <div className="stat-lbl">📋 פעילים</div>
           </div>
         </div>
       </div>
@@ -130,6 +126,7 @@ export default function AgentDashboard({ session }) {
       {/* HOME */}
       {tab === 'home' && (
         <div style={{flex:1}}>
+          {/* Today meetings */}
           {todayM.length > 0 && (
             <>
               <div className="section-header today">📅 פגישות היום</div>
@@ -138,6 +135,9 @@ export default function AgentDashboard({ session }) {
                   <div>
                     <div className="today-card-addr">{l.project_address}</div>
                     <div className="today-card-client">{l.client_name}</div>
+                    {l.lead_notes?.some(n => n.content.startsWith('📋')) && (
+                      <div style={{fontSize:11,color:'#185FA5',marginTop:3}}>📋 יש הכנה לפגישה</div>
+                    )}
                   </div>
                   <div className="today-card-time">
                     {new Date(l.visit_datetime).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}
@@ -147,33 +147,46 @@ export default function AgentDashboard({ session }) {
             </>
           )}
 
+          {/* Stale */}
           {stale.length > 0 && (
             <>
               <div className="section-header urgent">⚠️ דורש טיפול עכשיו</div>
-              <div className="lead-list" style={{paddingTop:4}}>
+              <div style={{padding:'4px 12px 0'}}>
                 {stale.map(l => <LeadCard key={l.id} lead={l} onUpdate={load} onSchedule={setSchedLead}/>)}
               </div>
             </>
           )}
 
+          {/* Fresh active */}
           {fresh.length > 0 && (
             <>
               <div className="section-header">לידים פעילים</div>
-              <div className="lead-list" style={{paddingTop:4}}>
+              <div style={{padding:'4px 12px 0'}}>
                 {fresh.map(l => <LeadCard key={l.id} lead={l} onUpdate={load} onSchedule={setSchedLead}/>)}
               </div>
             </>
           )}
 
+          {/* Empty */}
           {leads.length === 0 && (
             <div style={{textAlign:'center',padding:'48px 24px'}}>
-              <div style={{fontSize:48,marginBottom:16}}>📞</div>
-              <div style={{fontSize:17,fontWeight:600,marginBottom:8}}>אין לידים עדיין</div>
-              <div style={{fontSize:14,color:'var(--text2)',marginBottom:24,lineHeight:1.6}}>
-                קיבלת שיחה נכנסת?<br/>הוסף אותה עכשיו
-              </div>
+              <div style={{fontSize:52,marginBottom:16}}>📞</div>
+              <div style={{fontSize:18,fontWeight:600,marginBottom:8}}>אין לידים עדיין</div>
+              <div style={{fontSize:14,color:'var(--text2)',marginBottom:24,lineHeight:1.7}}>קיבלת שיחה נכנסת?<br/>הוסף אותה עכשיו</div>
               <button className="btn-primary" style={{maxWidth:240,margin:'0 auto',display:'block'}} onClick={() => setShowAdd(true)}>
-                + הוסף את הליד הראשון
+                + שיחה נכנסת חדשה
+              </button>
+            </div>
+          )}
+
+          {/* Add button at bottom of list */}
+          {leads.length > 0 && (
+            <div style={{padding:'8px 12px 24px'}}>
+              <button
+                onClick={() => setShowAdd(true)}
+                style={{width:'100%',background:'#1D9E75',color:'white',border:'none',borderRadius:12,padding:'14px',fontSize:15,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}
+              >
+                + שיחה נכנסת חדשה
               </button>
             </div>
           )}
@@ -181,16 +194,13 @@ export default function AgentDashboard({ session }) {
       )}
 
       {/* MEETINGS */}
-      {tab === 'meetings' && (
-        <MeetingsView agentId={session.user.id} isManager={false}/>
-      )}
+      {tab === 'meetings' && <MeetingsView agentId={session.user.id} isManager={false}/>}
 
       {/* ALL LEADS */}
       {tab === 'leads' && (
         <div style={{flex:1}}>
           <div style={{padding:'10px 12px 0'}}>
-            <input
-              placeholder="🔍 חפש לפי כתובת, שם, טלפון..."
+            <input placeholder="🔍 חפש לפי כתובת, שם, טלפון..."
               value={search} onChange={e => setSearch(e.target.value)}
               style={{width:'100%',padding:'10px 14px',borderRadius:10,border:'1px solid var(--border)',background:'var(--card)',color:'var(--text)',fontSize:14}}
             />
@@ -209,7 +219,7 @@ export default function AgentDashboard({ session }) {
               </button>
             ))}
           </div>
-          <div className="lead-list">
+          <div style={{padding:'8px 12px',display:'flex',flexDirection:'column',gap:8}}>
             {visible.length === 0 && <div className="empty-state">אין לידים</div>}
             {visible.map(l => <LeadCard key={l.id} lead={l} onUpdate={load} onSchedule={setSchedLead}/>)}
           </div>
