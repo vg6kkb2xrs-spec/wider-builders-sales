@@ -6,12 +6,13 @@ export const supabase = createClient(
 )
 
 export const STAGES = [
-  { key: 'incoming_call',   label: 'חדש',           color: '#185FA5', bg: '#E6F1FB', next: 'in_progress',   nextLabel: 'העבר לטיפול' },
-  { key: 'in_progress',     label: 'בתהליך',         color: '#854F0B', bg: '#FAEEDA', next: 'proposal_sent', nextLabel: 'הצעה נשלחה' },
-  { key: 'proposal_sent',   label: 'נשלחה הצעה',     color: '#534AB7', bg: '#EEEDFE', next: 'closed_won',    nextLabel: '🎉 נסגר! קבל מקדמה' },
-  { key: 'closed_won',      label: 'נסגר ✅',         color: '#3B6D11', bg: '#EAF3DE' },
-  { key: 'closed_lost',     label: 'אבוד',            color: '#A32D2D', bg: '#FCEBEB' },
-  { key: 'frozen',          label: '🧊 קפוא',         color: '#5F5E5A', bg: '#F1EFE8' },
+  { key: 'incoming_call',   label: 'חדש',            color: '#185FA5', bg: '#E6F1FB', next: 'in_progress',   nextLabel: 'העבר לטיפול' },
+  { key: 'in_progress',     label: 'בתהליך',          color: '#854F0B', bg: '#FAEEDA', next: 'proposal_sent', nextLabel: 'הצעה נשלחה' },
+  { key: 'proposal_sent',   label: 'נשלחה הצעה',      color: '#534AB7', bg: '#EEEDFE', next: 'closed_won',    nextLabel: '🎉 נסגר! קבל מקדמה' },
+  { key: 'closed_won',      label: 'נסגר — בביצוע',   color: '#0F6E56', bg: '#E1F5EE', next: 'completed',     nextLabel: '✅ הושלם + תשלום סופי' },
+  { key: 'completed',       label: 'הושלם ✅',         color: '#3B6D11', bg: '#EAF3DE' },
+  { key: 'closed_lost',     label: 'אבוד',             color: '#A32D2D', bg: '#FCEBEB' },
+  { key: 'frozen',          label: '🧊 קפוא',          color: '#5F5E5A', bg: '#F1EFE8' },
 ]
 
 export const stageInfo = (key) => STAGES.find(s => s.key === key) || STAGES[0]
@@ -46,7 +47,7 @@ export async function updateLead(leadId, updates) {
 
 export async function updateLeadStage(leadId, stage) {
   const updates = { stage, last_contact_at: new Date().toISOString() }
-  if (stage === 'closed_won') updates.closed_at = new Date().toISOString()
+  if (stage === 'completed') updates.closed_at = new Date().toISOString()
   const { error } = await supabase.from('leads').update(updates).eq('id', leadId)
   if (error) throw error
 }
@@ -117,3 +118,4 @@ export async function createCalendarEvent(lead, datetime) {
   if (!res.ok) throw new Error('שגיאה ביצירת אירוע')
   return await res.json()
 }
+
