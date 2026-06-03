@@ -1,3 +1,4 @@
+import MeetingsView from './MeetingsView'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
@@ -255,6 +256,10 @@ export default function ManagerDashboard({ session }) {
             <button className="btn-primary" onClick={() => setShowAddAgent(true)}>+ הוסף סוכן</button>
           </div>
         </div>
+      )}
+
+      {view === 'meetings' && (
+        <MeetingsView agentId={session.user.id} isManager={true} />
       )}
 
       {view === 'leads' && (
