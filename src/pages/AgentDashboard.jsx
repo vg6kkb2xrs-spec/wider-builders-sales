@@ -47,15 +47,16 @@ export default function AgentDashboard({ session }) {
 
   const staleCount = leads.filter(l => {
     const days = Math.floor((Date.now() - new Date(l.last_contact_at || l.updated_at).getTime()) / 86400000)
-    return days >= 7 && !['closed_won','closed_lost','frozen'].includes(l.stage)
+    return days >= 7 && !['closed_won','completed','closed_lost','frozen'].includes(l.stage)
   }).length
 
   const visibleLeads = leads.filter(l => {
     const matchFilter =
-      filter === 'active'  ? !['closed_won','closed_lost','frozen'].includes(l.stage) :
-      filter === 'won'     ? l.stage === 'closed_won' :
-      filter === 'lost'    ? l.stage === 'closed_lost' :
-      filter === 'frozen'  ? l.stage === 'frozen' : true
+      filter === 'active'     ? !['closed_won','completed','closed_lost','frozen'].includes(l.stage) :
+      filter === 'closed_won' ? l.stage === 'closed_won' :
+      filter === 'completed'  ? l.stage === 'completed' :
+      filter === 'lost'       ? l.stage === 'closed_lost' :
+      filter === 'frozen'     ? l.stage === 'frozen' : true
     const matchSearch = !search || 
       l.project_address.toLowerCase().includes(search.toLowerCase()) ||
       l.client_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -152,11 +153,12 @@ export default function AgentDashboard({ session }) {
       {/* Filter tabs */}
       <div className="tab-row">
         {[
-          { key:'active', label:'פעיל' },
-          { key:'won',    label:'בוצע' },
-          { key:'lost',   label:'אבוד' },
-          { key:'frozen', label:'🧊 קפוא' },
-          { key:'all',    label:'הכל' },
+          { key:'active',    label:'פעיל' },
+          { key:'closed_won', label:'בביצוע' },
+          { key:'completed', label:'הושלם ✅' },
+          { key:'lost',      label:'אבוד' },
+          { key:'frozen',    label:'🧊 קפוא' },
+          { key:'all',       label:'הכל' },
         ].map(t => (
           <button key={t.key} className={`tab ${filter===t.key?'tab--active':''}`} onClick={()=>setFilter(t.key)}>
             {t.label}
@@ -186,3 +188,4 @@ export default function AgentDashboard({ session }) {
     </div>
   )
 }
+
