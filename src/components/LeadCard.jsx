@@ -25,8 +25,8 @@ export default function LeadCard({ lead, onUpdate, onSchedule }) {
 
   const s = stageInfo(lead.stage)
   const days = daysSince(lead.last_contact_at || lead.updated_at)
-  const isStale = days >= 7 && !['closed_won','closed_lost','frozen'].includes(lead.stage)
-  const isClosed = ['closed_won','closed_lost'].includes(lead.stage)
+  const isStale = days >= 7 && !['closed_won','completed','closed_lost','frozen'].includes(lead.stage)
+  const isClosed = ['completed','closed_lost'].includes(lead.stage)
 
   const handleStageNext = async () => {
     if (!s.next) return
@@ -238,3 +238,4 @@ export default function LeadCard({ lead, onUpdate, onSchedule }) {
     </div>
   )
 }
+
