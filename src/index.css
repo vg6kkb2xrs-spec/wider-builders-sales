@@ -14,18 +14,7 @@
   --blue-soft:#E6F1FB;
   --blue:#185FA5;
 }
-@media(prefers-color-scheme:dark){
-  :root{
-    --text:#f0f0f0;
-    --text2:#8E8E93;
-    --border:rgba(255,255,255,.1);
-    --card:#1C1C1E;
-    --bg:#000;
-    --green-soft:#0a2e20;
-    --red-soft:#2a0a0a;
-    --blue-soft:#0a1a2e;
-  }
-}
+/* light mode only */
 
 body{
   font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;
@@ -186,3 +175,4 @@ body{
 /* VISIT MODAL */
 .visit-addr{font-size:16px;font-weight:700;margin-bottom:3px;letter-spacing:-.2px}
 .visit-client{font-size:13px;color:var(--text2);margin-bottom:16px}
+
