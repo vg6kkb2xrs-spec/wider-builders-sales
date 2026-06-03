@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import AddLeadModal from '../components/AddLeadModal'
 import ScheduleVisitModal from '../components/ScheduleVisitModal'
 import LeadCard from '../components/LeadCard'
+import MeetingsView from './MeetingsView'
 
 const fmt = (n) => n ? `$${Number(n).toLocaleString()}` : '—'
 const fmtN = (n) => `$${Number(n || 0).toLocaleString()}`
@@ -22,6 +23,7 @@ export default function AgentDashboard({ session }) {
   const [showAdd, setShowAdd] = useState(false)
   const [schedLead, setSchedLead] = useState(null)
   const [filter, setFilter] = useState('active')
+  const [mainTab, setMainTab] = useState('leads')
   const [search, setSearch] = useState('')
 
   const load = async () => {
@@ -60,6 +62,12 @@ export default function AgentDashboard({ session }) {
       (l.phone || '').includes(search)
     return matchFilter && matchSearch
   })
+
+  const todayMeetings = leads.filter(l => {
+    if (!l.visit_datetime) return false
+    const d = new Date(l.visit_datetime)
+    return d.toDateString() === new Date().toDateString()
+  }).length
 
   const agentName = session.user.user_metadata?.full_name?.split(' ')[0] || 'סוכן'
 
@@ -107,7 +115,7 @@ export default function AgentDashboard({ session }) {
           {[
             { label:'סגורות החודש', val: perf?.won_count || 0, color:'#5DCAA5' },
             { label:'בביצוע', val: leads.filter(l=>l.stage==='in_progress').length, color:'#EF9F27' },
-            { label:'⚠️ ללא מגע', val: staleCount, color: staleCount > 0 ? '#E24B4A' : '#5DCAA5' },
+            { label:'📅 פגישות היום', val: todayMeetings, color: todayMeetings > 0 ? '#1D9E75' : '#888' },
           ].map(s => (
             <div className="stat-box" key={s.label}>
               <div className="stat-num" style={{ color:s.color }}>{s.val}</div>
@@ -117,6 +125,20 @@ export default function AgentDashboard({ session }) {
         </div>
       </div>
 
+      {/* Main tabs */}
+      <div style={{ display:'flex', borderBottom:'1px solid var(--border)', background:'var(--card)' }}>
+        {[{key:'leads',label:'לידים'},{key:'meetings',label:`פגישות${todayMeetings > 0 ? ` (${todayMeetings})` : ''}`}].map(t => (
+          <button key={t.key} className={`tab ${mainTab===t.key?'tab--active':''}`} style={{flex:1}} onClick={()=>setMainTab(t.key)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {mainTab === 'meetings' && (
+        <MeetingsView agentId={session.user.id} isManager={false} />
+      )}
+
+      {mainTab === 'leads' && <>
       {/* Search */}
       <div style={{ padding:'10px 16px 0' }}>
         <input
@@ -154,6 +176,8 @@ export default function AgentDashboard({ session }) {
           />
         ))}
       </div>
+
+      </> }
 
       <button className="fab" onClick={() => setShowAdd(true)}>+</button>
 
