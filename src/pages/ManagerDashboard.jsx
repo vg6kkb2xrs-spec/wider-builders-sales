@@ -2,270 +2,172 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import MeetingsView from './MeetingsView'
 
-const fmt  = (n) => `$${Number(n || 0).toLocaleString()}`
+const fmt=(n)=>`$${Number(n||0).toLocaleString()}`
+const fmtK=(n)=>{const v=Number(n||0);return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}K`:`$${v}`}
 
-function calcMonthly(annual, retro, won) {
-  const left = 12 - new Date().getMonth()
-  return left > 0 ? Math.round(Math.max(0, annual - retro - won) / left) : 0
+function calcMonthly(annual,retro,won){
+  const left=12-new Date().getMonth()
+  return left>0?Math.round(Math.max(0,annual-retro-won)/left):0
 }
 
-function EditModal({ agent, onClose, onSaved }) {
-  const [form, setForm] = useState({
-    name: agent.name,
-    annual_target: agent.annual_target || 0,
-    retro_sales: agent.retro_sales || 0,
-  })
-  const [saving, setSaving] = useState(false)
-
-  const monthly = calcMonthly(Number(form.annual_target), Number(form.retro_sales), Number(agent.won_value || 0))
-
-  const save = async () => {
+function EditModal({agent,onClose,onSaved}){
+  const [form,setForm]=useState({name:agent.name,annual_target:agent.annual_target||0,retro_sales:agent.retro_sales||0})
+  const [saving,setSaving]=useState(false)
+  const monthly=calcMonthly(Number(form.annual_target),Number(form.retro_sales),Number(agent.won_value||0))
+  const save=async()=>{
     setSaving(true)
-    await supabase.from('agents').update({
-      name: form.name,
-      annual_target: Number(form.annual_target),
-      retro_sales: Number(form.retro_sales),
-      monthly_target: monthly,
-    }).eq('id', agent.id)
-    setSaving(false)
-    onSaved()
-    onClose()
+    await supabase.from('agents').update({name:form.name,annual_target:Number(form.annual_target),retro_sales:Number(form.retro_sales),monthly_target:monthly}).eq('id',agent.id)
+    setSaving(false);onSaved();onClose()
   }
-
-  return (
+  return(
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} dir="rtl">
-        <div className="modal-header">
-          <h2>עריכת יעדים — {agent.name}</h2>
-          <button className="btn-icon" onClick={onClose} style={{color:'var(--text)'}}>✕</button>
+      <div className="modal" onClick={e=>e.stopPropagation()} dir="rtl">
+        <div className="modal-head">
+          <h2>עריכת יעדים</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
         </div>
-        <div className="form-group">
-          <label>שם</label>
-          <input value={form.name} onChange={e => setForm(p=>({...p,name:e.target.value}))}/>
+        <div className="field"><label>שם</label><input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></div>
+        <div className="field"><label>יעד שנתי ($)</label><input type="number" value={form.annual_target} onChange={e=>setForm(p=>({...p,annual_target:e.target.value}))}/></div>
+        <div className="field"><label>מכירות קודמות ($)</label><input type="number" value={form.retro_sales} onChange={e=>setForm(p=>({...p,retro_sales:e.target.value}))}/></div>
+        <div style={{background:'#E8F5EF',borderRadius:10,padding:'10px 12px',fontSize:13,color:'#1D9E75',marginBottom:12}}>
+          יעד חודשי מחושב: <strong>{fmtK(monthly)}</strong>
+          <div style={{fontSize:11,opacity:.75,marginTop:2}}>({12-new Date().getMonth()} חודשים שנשארו)</div>
         </div>
-        <div className="form-group">
-          <label>יעד שנתי ($)</label>
-          <input type="number" value={form.annual_target} onChange={e => setForm(p=>({...p,annual_target:e.target.value}))}/>
-        </div>
-        <div className="form-group">
-          <label>מכירות שבוצעו לפני המערכת ($)</label>
-          <input type="number" value={form.retro_sales} placeholder="0" onChange={e => setForm(p=>({...p,retro_sales:e.target.value}))}/>
-        </div>
-        <div style={{background:'#E1F5EE',borderRadius:10,padding:'10px 14px',fontSize:13,color:'#0F6E56',marginBottom:16}}>
-          יעד חודשי מחושב: <strong>{fmt(monthly)}</strong>
-          <div style={{fontSize:11,opacity:.8,marginTop:2}}>
-            (יעד שנתי פחות מכירות קיימות, חלקי {12 - new Date().getMonth()} חודשים שנשארו)
-          </div>
-        </div>
-        <button className="btn-primary" onClick={save} disabled={saving}>
-          {saving ? 'שומר...' : 'שמור שינויים'}
-        </button>
+        <button className="submit-btn" onClick={save} disabled={saving}>{saving?'שומר...':'שמור'}</button>
       </div>
     </div>
   )
 }
 
-function AgentCard({ agent, onEdit }) {
-  const annual = Number(agent.annual_target || 0)
-  const retro  = Number(agent.retro_sales   || 0)
-  const won    = Number(agent.won_value      || 0)
-  const total  = retro + won
-  const pct    = annual > 0 ? Math.min(100, Math.round(total / annual * 100)) : 0
-  const monthly = calcMonthly(annual, retro, won)
-
-  return (
+function AgentCard({agent,onEdit}){
+  const annual=Number(agent.annual_target||0)
+  const retro=Number(agent.retro_sales||0)
+  const won=Number(agent.won_value||0)
+  const total=retro+won
+  const pct=annual>0?Math.min(100,Math.round(total/annual*100)):0
+  const monthly=calcMonthly(annual,retro,won)
+  return(
     <div className="mgr-card">
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
         <div>
-          <div style={{fontSize:16,fontWeight:600}}>{agent.name}</div>
-          <div style={{fontSize:12,color:'var(--text2)',marginTop:2}}>
-            {agent.active_leads || 0} לידים פעילים
-            {agent.active_leads === 0 && ' · אין לידים פעילים'}
-          </div>
+          <div style={{fontSize:15,fontWeight:600,color:'#1a1a1a'}}>{agent.name}</div>
+          <div style={{fontSize:11,color:'#8E8E93',marginTop:1}}>{agent.active_leads||0} לידים פעילים</div>
         </div>
-        <button
-          onClick={() => onEdit(agent)}
-          style={{fontSize:12,color:'#185FA5',background:'#E6F1FB',border:'.5px solid #B5D4F4',borderRadius:8,padding:'5px 12px',cursor:'pointer'}}
-        >
+        <button onClick={()=>onEdit(agent)}
+          style={{fontSize:12,color:'#1D9E75',background:'#E8F5EF',border:'.5px solid #9FE1CB',borderRadius:20,padding:'5px 12px',cursor:'pointer',fontFamily:'inherit'}}>
           ✏️ ערוך יעדים
         </button>
       </div>
-
-      <div style={{fontSize:24,fontWeight:700,color:'var(--teal)',margin:'4px 0 2px'}}>
-        {fmt(total)}
-        <span style={{fontSize:14,fontWeight:400,color:'var(--text2)',marginRight:6}}>/ {fmt(annual)} שנתי</span>
+      <div style={{fontSize:26,fontWeight:700,color:'#1D9E75',marginBottom:2}}>{fmtK(total)}</div>
+      <div style={{fontSize:11,color:'#8E8E93',marginBottom:6}}>מתוך {fmtK(annual)} שנתי · יעד חודשי {fmtK(monthly)}</div>
+      <div style={{background:'#E5E5EA',borderRadius:3,height:4,marginBottom:6,overflow:'hidden'}}>
+        <div style={{background:'#1D9E75',height:4,borderRadius:3,width:pct+'%',transition:'width .5s'}}/>
       </div>
-
-      <div className="progress-track" style={{background:'rgba(0,0,0,.08)',marginBottom:6}}>
-        <div className="progress-bar" style={{width:pct+'%',background:'var(--teal)'}}/>
-      </div>
-
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6}}>
-        <div style={{background:'var(--bg)',borderRadius:8,padding:'7px 8px',textAlign:'center'}}>
-          <div style={{fontSize:15,fontWeight:600}}>{agent.won_count || 0}</div>
-          <div style={{fontSize:10,color:'var(--text2)'}}>סגירות</div>
-        </div>
-        <div style={{background:'var(--bg)',borderRadius:8,padding:'7px 8px',textAlign:'center'}}>
-          <div style={{fontSize:15,fontWeight:600,color:'var(--teal)'}}>{fmt(monthly)}</div>
-          <div style={{fontSize:10,color:'var(--text2)'}}>יעד חודשי</div>
-        </div>
-        {retro > 0 && (
-          <div style={{background:'var(--bg)',borderRadius:8,padding:'7px 8px',textAlign:'center'}}>
-            <div style={{fontSize:15,fontWeight:600}}>{fmt(retro)}</div>
-            <div style={{fontSize:10,color:'var(--text2)'}}>קודמות</div>
+        {[{n:agent.won_count||0,l:'סגירות'},{n:agent.active_leads||0,l:'פעילים'},{n:fmtK(retro),l:'קודמות'}].map(s=>(
+          <div key={s.l} style={{background:'#F2F2F7',borderRadius:10,padding:'7px 8px',textAlign:'center'}}>
+            <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a'}}>{s.n}</div>
+            <div style={{fontSize:10,color:'#8E8E93',marginTop:1}}>{s.l}</div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   )
 }
 
-export default function ManagerDashboard({ session }) {
-  const [tab, setTab]     = useState('agents')
-  const [agents, setAgents] = useState([])
-  const [leads, setLeads]   = useState([])
-  const [editing, setEditing] = useState(null)
+export default function ManagerDashboard({session}){
+  const [tab,setTab]=useState('agents')
+  const [agents,setAgents]=useState([])
+  const [leads,setLeads]=useState([])
+  const [editing,setEditing]=useState(null)
 
-  const load = async () => {
-    const { data: a } = await supabase
-      .from('agent_performance').select('*')
-      .neq('email', session.user.email)
-
-    const { data: l } = await supabase
-      .from('leads')
-      .select('*, agents(name)')
-      .order('updated_at', { ascending: false })
-
-    setAgents(a || [])
-    setLeads(l || [])
+  const load=async()=>{
+    const {data:a}=await supabase.from('agent_performance').select('*').neq('email',session.user.email)
+    const {data:l}=await supabase.from('leads').select('*, agents(name)').order('updated_at',{ascending:false})
+    setAgents(a||[]);setLeads(l||[])
   }
+  useEffect(()=>{load()},[])
 
-  useEffect(() => { load() }, [])
+  const totalWon=agents.reduce((s,a)=>s+Number(a.won_value||0)+Number(a.retro_sales||0),0)
+  const totalAnnual=agents.reduce((s,a)=>s+Number(a.annual_target||0),0)
+  const totalPct=totalAnnual>0?Math.min(100,Math.round(totalWon/totalAnnual*100)):0
+  const todayM=leads.filter(l=>l.visit_datetime&&new Date(l.visit_datetime).toDateString()===new Date().toDateString())
 
-  const totalWon    = agents.reduce((s,a) => s + Number(a.won_value||0) + Number(a.retro_sales||0), 0)
-  const totalAnnual = agents.reduce((s,a) => s + Number(a.annual_target||0), 0)
-  const totalPct    = totalAnnual > 0 ? Math.min(100, Math.round(totalWon / totalAnnual * 100)) : 0
+  const STAGE_LABELS={incoming_call:'שיחה נכנסת',in_progress:'בטיפול',proposal_sent:'מחכה לתשובה',closed_won:'עובדים אצלו',completed:'הושלם ✅',closed_lost:'אבוד',frozen:'🧊 קפוא'}
+  const STAGE_BG={incoming_call:'#E6F1FB',in_progress:'#FAEEDA',proposal_sent:'#EEEDFE',closed_won:'#E8F5EF',completed:'#EAF3DE',closed_lost:'#FFF5F5',frozen:'#F5F5F0'}
+  const STAGE_COLOR={incoming_call:'#185FA5',in_progress:'#854F0B',proposal_sent:'#534AB7',closed_won:'#0F6E56',completed:'#3B6D11',closed_lost:'#E24B4A',frozen:'#8E8E93'}
 
-  const todayMeetings = leads.filter(l =>
-    l.visit_datetime && new Date(l.visit_datetime).toDateString() === new Date().toDateString()
-  )
+  return(
+    <div className="app" dir="rtl">
+      {editing&&<EditModal agent={editing} onClose={()=>setEditing(null)} onSaved={()=>{setEditing(null);load()}}/>}
 
-  const STAGE_LABELS = {
-    incoming_call:'שיחה נכנסת', in_progress:'בטיפול',
-    proposal_sent:'מחכה לתשובה', closed_won:'עובדים אצלו',
-    completed:'הושלם ✅', closed_lost:'אבוד', frozen:'🧊 קפוא',
-  }
-  const STAGE_COLORS = {
-    incoming_call:{bg:'#E6F1FB',color:'#185FA5'}, in_progress:{bg:'#FAEEDA',color:'#854F0B'},
-    proposal_sent:{bg:'#EEEDFE',color:'#534AB7'}, closed_won:{bg:'#E1F5EE',color:'#0F6E56'},
-    completed:{bg:'#EAF3DE',color:'#3B6D11'}, closed_lost:{bg:'#FCEBEB',color:'#A32D2D'},
-    frozen:{bg:'#F1EFE8',color:'#5F5E5A'},
-  }
-
-  return (
-    <div className="app-shell" dir="rtl">
-      {editing && (
-        <EditModal agent={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load() }}/>
-      )}
-
-      <div className="hero">
-        <div className="hero-top">
-          <div>
-            <div className="hero-greeting">דאשבורד מנהל 👔</div>
-            <div className="hero-sub">{new Date().toLocaleDateString('he-IL',{weekday:'long',month:'long',day:'numeric'})}</div>
-          </div>
-          <button className="btn-icon" onClick={() => supabase.auth.signOut()}>⎋</button>
+      {/* HERO */}
+      <div className="h">
+        <div className="h-top">
+          <div><div className="h-name">דאשבורד מנהל 👔</div><div className="h-date">{new Date().toLocaleDateString('he-IL',{weekday:'long',month:'long',day:'numeric'})}</div></div>
+          <button className="h-btn" onClick={()=>supabase.auth.signOut()}>⎋</button>
         </div>
-        <div className="goal-card">
-          <div style={{textAlign:'center',marginBottom:8}}>
-            <div className="goal-label">סה"כ צוות — שנתי</div>
-            <div style={{fontSize:30,fontWeight:700,color:'white',lineHeight:1.1}}>{fmt(totalWon)}</div>
-            <div style={{fontSize:13,opacity:.8,marginTop:2}}>מתוך {fmt(totalAnnual)}</div>
-            <div className="progress-track" style={{marginTop:8}}>
-              <div className="progress-bar" style={{width:totalPct+'%'}}/>
-            </div>
-            <div className="progress-label">{totalPct}% · {agents.length} סוכנים</div>
-          </div>
+        <div className="h-amt">{fmtK(totalWon)}</div>
+        <div className="h-sub">סה"כ צוות · מתוך {fmtK(totalAnnual)} · {totalPct}%</div>
+        <div className="h-prog"><div className="h-fill" style={{width:totalPct+'%'}}/></div>
+        <div className="h-grid">
+          <div className="h-cell"><div className="h-cell-n">{agents.length}</div><div className="h-cell-l">סוכנים</div></div>
+          <div className="h-cell"><div className="h-cell-n" style={{color:todayM.length>0?'#9FE1CB':'rgba(255,255,255,.4)'}}>{todayM.length}</div><div className="h-cell-l">פגישות היום</div></div>
+          <div className="h-cell"><div className="h-cell-n">{leads.filter(l=>!['completed','closed_lost','frozen'].includes(l.stage)).length}</div><div className="h-cell-l">לידים פעילים</div></div>
         </div>
       </div>
 
-      <div style={{display:'flex',background:'var(--card)',borderBottom:'1px solid var(--border)'}}>
-        {[
-          {key:'agents',label:'סוכנים ויעדים'},
-          {key:'meetings',label: todayMeetings.length > 0 ? `פגישות (${todayMeetings.length})` : 'פגישות'},
-          {key:'leads',label:'כל הלידים'},
-        ].map(t => (
-          <button key={t.key} className={`tab ${tab===t.key?'tab--active':''}`} style={{flex:1}} onClick={() => setTab(t.key)}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'agents' && (
-        <div className="lead-list">
-          {todayMeetings.length > 0 && (
-            <>
-              <div className="section-header today">📅 פגישות הצוות היום</div>
-              {todayMeetings.map(l => (
-                <div key={l.id} className="today-card" style={{margin:'0 0 6px'}}>
-                  <div>
-                    <div className="today-card-addr">{l.project_address}</div>
-                    <div className="today-card-client">{l.client_name} · {l.agents?.name}</div>
-                  </div>
-                  <div className="today-card-time">
-                    {new Date(l.visit_datetime).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-          <div className="section-header">ביצועי סוכנים</div>
-          {agents.map(a => <AgentCard key={a.id} agent={a} onEdit={setEditing}/>)}
-          {agents.length === 0 && (
-            <div className="empty-state">סוכנים יופיעו כאן לאחר כניסה ראשונה לאפליקציה</div>
-          )}
-        </div>
-      )}
-
-      {tab === 'meetings' && (
-        <MeetingsView agentId={session.user.id} isManager={true}/>
-      )}
-
-      {tab === 'leads' && (
-        <div className="lead-list">
-          {leads.map(lead => {
-            const s = STAGE_COLORS[lead.stage] || STAGE_COLORS.incoming_call
-            return (
-              <div key={lead.id} className="lead-card">
-                <div className="lead-header">
-                  <div className="lead-address">{lead.project_address}</div>
-                  <span className="stage-badge" style={{background:s.bg,color:s.color}}>{STAGE_LABELS[lead.stage]}</span>
-                </div>
-                <div className="lead-meta">
-                  <span>{lead.client_name}</span>
-                  {lead.estimated_value && <span>💰 ${Number(lead.estimated_value).toLocaleString()}</span>}
-                  {lead.agents?.name && <span>👤 {lead.agents.name}</span>}
-                </div>
+      {/* AGENTS TAB */}
+      {tab==='agents'&&<div className="body">
+        {todayM.length>0&&(
+          <div className="today-card">
+            <div className="tc-hdr"><div className="tc-dot"/><div className="tc-ttl">פגישות הצוות היום</div></div>
+            {todayM.map(l=>(
+              <div key={l.id} className="tc-row">
+                <div><div className="tc-addr">{l.project_address}</div><div className="tc-client">{l.agents?.name}</div></div>
+                <div className="tc-time">{new Date(l.visit_datetime).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</div>
               </div>
-            )
-          })}
-          {leads.length === 0 && <div className="empty-state">אין לידים עדיין</div>}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+        <div className="sec-hdr">ביצועי סוכנים</div>
+        {agents.map(a=><AgentCard key={a.id} agent={a} onEdit={setEditing}/>)}
+        {agents.length===0&&<div className="empty"><div className="empty-sub">סוכנים יופיעו לאחר כניסה ראשונה</div></div>}
+      </div>}
 
-      <nav className="bottom-nav">
-        <button className={`nav-item ${tab==='agents'?'active':''}`} onClick={() => setTab('agents')}>
-          <i className="ti ti-users nav-icon" aria-hidden="true"/>
-          סוכנים
+      {/* MEETINGS TAB */}
+      {tab==='meetings'&&<MeetingsView agentId={session.user.id} isManager={true}/>}
+
+      {/* LEADS TAB */}
+      {tab==='leads'&&<div className="body">
+        <div style={{paddingTop:8}}>
+          {leads.map(lead=>(
+            <div key={lead.id} className="lead-card">
+              <div style={{flex:1,minWidth:0}}>
+                <div className="l-addr">{lead.project_address}</div>
+                <div className="l-client">{lead.client_name}</div>
+                {lead.estimated_value&&<div className="l-amt">${Number(lead.estimated_value).toLocaleString()}</div>}
+                {lead.agents?.name&&<div style={{fontSize:10,color:'#8E8E93',marginTop:2}}>👤 {lead.agents.name}</div>}
+              </div>
+              <span className="s-pill" style={{background:STAGE_BG[lead.stage]||'#F2F2F7',color:STAGE_COLOR[lead.stage]||'#8E8E93'}}>{STAGE_LABELS[lead.stage]}</span>
+            </div>
+          ))}
+          {leads.length===0&&<div className="empty"><div className="empty-sub">אין לידים עדיין</div></div>}
+        </div>
+      </div>}
+
+      {/* BOTTOM NAV */}
+      <nav className="nav">
+        <button className={`nb ${tab==='agents'?'on':''}`} onClick={()=>setTab('agents')}>
+          <div className="nb-icon"><i className="ti ti-users" aria-hidden="true"/></div>סוכנים
         </button>
-        <button className={`nav-item ${tab==='meetings'?'active':''}`} onClick={() => setTab('meetings')} style={{position:'relative'}}>
-          <i className="ti ti-calendar nav-icon" aria-hidden="true"/>
-          {todayMeetings.length > 0 && <span className="nav-badge">{todayMeetings.length}</span>}
+        <button className={`nb ${tab==='meetings'?'on':''}`} onClick={()=>setTab('meetings')} style={{position:'relative'}}>
+          <div className="nb-icon"><i className="ti ti-calendar" aria-hidden="true"/></div>
+          {todayM.length>0&&<span className="nb-badge">{todayM.length}</span>}
           פגישות
         </button>
-        <button className={`nav-item ${tab==='leads'?'active':''}`} onClick={() => setTab('leads')}>
-          <i className="ti ti-list nav-icon" aria-hidden="true"/>
-          לידים
+        <button className={`nb ${tab==='leads'?'on':''}`} onClick={()=>setTab('leads')}>
+          <div className="nb-icon"><i className="ti ti-list" aria-hidden="true"/></div>לידים
         </button>
       </nav>
     </div>
