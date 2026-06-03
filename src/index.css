@@ -77,11 +77,11 @@ body{
 .add-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:calc(100% - 20px);margin:8px 10px 10px;background:#1D9E75;color:#fff;border:none;border-radius:13px;padding:14px;font-size:14px;font-weight:600;cursor:pointer}
 
 /* ===== BOTTOM NAV — BIT STYLE ===== */
-.nav{display:flex;background:#fff;border-top:.5px solid #E5E5EA;padding:6px 4px max(10px,env(safe-area-inset-bottom));gap:4px;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:100}
-.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;background:none;border:none;padding:6px 4px;border-radius:12px;font-size:10px;color:#8E8E93;font-family:inherit;transition:all .15s;position:relative}
-.nb.on{color:#1D9E75;background:#F0FBF6}
-.nb-icon{font-size:22px;line-height:1}
-.nb-badge{position:absolute;top:2px;right:calc(50% - 18px);background:#E24B4A;color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:10px;min-width:14px;text-align:center}
+.nav{display:flex;background:#fff;border-top:.5px solid #E5E5EA;padding:8px 8px max(12px,env(safe-area-inset-bottom));gap:8px;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:100}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:#F2F2F7;border:.5px solid #E5E5EA;padding:10px 6px;border-radius:14px;font-size:11px;font-weight:500;color:#8E8E93;font-family:inherit;transition:all .15s;position:relative}
+.nb.on{color:#1D9E75;background:#E8F5EF;border-color:#9FE1CB}
+.nb-icon{font-size:24px;line-height:1}
+.nb-badge{position:absolute;top:-4px;right:-4px;background:#E24B4A;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;min-width:15px;text-align:center}
 
 /* ===== EMPTY STATE ===== */
 .empty{text-align:center;padding:48px 24px}
