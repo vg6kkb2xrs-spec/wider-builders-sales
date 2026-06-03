@@ -1,265 +1,127 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const fmt = (n) => n ? `$${Number(n).toLocaleString()}` : '—'
+function isToday(d){return new Date(d).toDateString()===new Date().toDateString()}
+function isTomorrow(d){const t=new Date();t.setDate(t.getDate()+1);return new Date(d).toDateString()===t.toDateString()}
 
-function isToday(dateStr) {
-  return new Date(dateStr).toDateString() === new Date().toDateString()
-}
-
-function isTomorrow(dateStr) {
-  const tom = new Date()
-  tom.setDate(tom.getDate() + 1)
-  return new Date(dateStr).toDateString() === tom.toDateString()
-}
-
-function dayLabel(dateStr) {
-  if (isToday(dateStr)) return '📅 היום'
-  if (isTomorrow(dateStr)) return '📅 מחר'
-  return new Date(dateStr).toLocaleDateString('he-IL', { weekday:'long', day:'numeric', month:'long' })
-}
-
-function NoteModal({ lead, type, agentId, onClose, onSaved }) {
-  const [text, setText] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  const prefix = type === 'prep' ? '📋 הכנה לפגישה' : '📝 סיכום פגישה'
-  const placeholder = type === 'prep'
-    ? 'מה לבדוק? מה להביא? דברים חשובים מהלקוח...'
-    : 'מה עלה בפגישה? תמחור? מעוניין? שלב הבא?'
-
-  const save = async () => {
-    if (!text.trim()) return
+function NoteModal({lead,type,agentId,onClose,onSaved}){
+  const [text,setText]=useState('')
+  const [saving,setSaving]=useState(false)
+  const prefix=type==='prep'?'📋 הכנה לפגישה':'📝 סיכום פגישה'
+  const save=async()=>{
+    if(!text.trim())return
     setSaving(true)
-    await supabase.from('lead_notes').insert({
-      lead_id: lead.id,
-      agent_id: agentId,
-      content: `${prefix}: ${text.trim()}`,
-    })
-    setSaving(false)
-    onSaved()
-    onClose()
+    await supabase.from('lead_notes').insert({lead_id:lead.id,agent_id:agentId,content:`${prefix}: ${text.trim()}`})
+    setSaving(false);onSaved();onClose()
   }
-
-  return (
+  return(
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} dir="rtl">
-        <div className="modal-header">
+      <div className="modal" onClick={e=>e.stopPropagation()} dir="rtl">
+        <div className="modal-head">
           <h2>{prefix}</h2>
-          <button className="btn-icon" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose}>✕</button>
         </div>
-        <div className="visit-address">📍 {lead.project_address}</div>
-        <div className="visit-client" style={{ marginBottom: 16 }}>{lead.client_name}</div>
-        <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 8 }}>
-          📅 {new Date(lead.visit_datetime).toLocaleDateString('he-IL', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' })}
+        <div className="visit-addr">📍 {lead.project_address}</div>
+        <div className="visit-client">{lead.client_name}</div>
+        <div className="field">
+          <label>{type==='prep'?'מה לבדוק / להביא:':'מה עלה בפגישה:'}</label>
+          <textarea rows={4} placeholder={type==='prep'?'דוגמאות, מידות, דברים מהלקוח...':'תמחור, הלקוח מעוניין, שלב הבא...'} value={text} onChange={e=>setText(e.target.value)} autoFocus/>
         </div>
-        <div className="form-group">
-          <label>{type === 'prep' ? 'הערות הכנה' : 'סיכום'}</label>
-          <textarea
-            rows={4}
-            placeholder={placeholder}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            autoFocus
-          />
-        </div>
-        <button className="btn-primary" onClick={save} disabled={saving}>
-          {saving ? 'שומר...' : 'שמור'}
-        </button>
+        <button className="submit-btn" onClick={save} disabled={saving}>{saving?'שומר...':'שמור'}</button>
       </div>
     </div>
   )
 }
 
-function MeetingCard({ lead, isManager, agentId, onNoteAdded }) {
-  const [noteType, setNoteType] = useState(null)
-  const [notes, setNotes] = useState([])
-  const [showNotes, setShowNotes] = useState(false)
+export default function MeetingsView({agentId,isManager}){
+  const [meetings,setMeetings]=useState([])
+  const [past,setPast]=useState([])
+  const [showPast,setShowPast]=useState(false)
+  const [noteModal,setNoteModal]=useState(null)
 
-  const loadNotes = async () => {
-    const { data } = await supabase
-      .from('lead_notes')
-      .select('*')
-      .eq('lead_id', lead.id)
-      .order('created_at', { ascending: false })
-    setNotes(data || [])
+  const load=async()=>{
+    let q=supabase.from('leads').select(isManager?'*, agents(name)':'*').not('visit_datetime','is',null).order('visit_datetime',{ascending:true})
+    if(!isManager)q=q.eq('agent_id',agentId)
+    const {data}=await q
+    const now=new Date()
+    setMeetings((data||[]).filter(l=>new Date(l.visit_datetime)>=now))
+    setPast((data||[]).filter(l=>new Date(l.visit_datetime)<now))
   }
+  useEffect(()=>{load()},[])
 
-  const meetingNotes = notes.filter(n =>
-    n.content.startsWith('📋 הכנה לפגישה') || n.content.startsWith('📝 סיכום פגישה')
-  )
+  const grouped={}
+  meetings.forEach(l=>{
+    const key=isToday(l.visit_datetime)?'today':isTomorrow(l.visit_datetime)?'tomorrow':new Date(l.visit_datetime).toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})
+    if(!grouped[key])grouped[key]=[]
+    grouped[key].push(l)
+  })
 
-  return (
-    <div
-      className="lead-card"
-      style={{
-        margin: '8px 16px',
-        borderRight: isToday(lead.visit_datetime) ? '3px solid #1D9E75' : undefined
-      }}
-    >
-      {noteType && (
-        <NoteModal
-          lead={lead}
-          type={noteType}
-          agentId={agentId}
-          onClose={() => setNoteType(null)}
-          onSaved={() => { loadNotes(); onNoteAdded() }}
-        />
+  const dayLabel=(key)=>key==='today'?'היום':key==='tomorrow'?'מחר, '+new Date(meetings.find(l=>{const d=new Date(l.visit_datetime);const t=new Date();t.setDate(t.getDate()+1);return d.toDateString()===t.toDateString()})?.visit_datetime).toLocaleDateString('he-IL',{weekday:'long'}):key
+
+  return(
+    <div className="body" dir="rtl">
+      {noteModal&&(
+        <NoteModal lead={noteModal.lead} type={noteModal.type} agentId={agentId}
+          onClose={()=>setNoteModal(null)} onSaved={load}/>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
-          <div className="lead-address">{lead.project_address}</div>
-          <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>{lead.client_name}</div>
-          {isManager && lead.agents?.name && (
-            <div style={{ fontSize: 12, color: 'var(--teal)', marginTop: 2 }}>👤 {lead.agents.name}</div>
-          )}
-          {lead.phone && <div style={{ fontSize: 12, color: 'var(--text2)' }}>📞 {lead.phone}</div>}
-        </div>
-        <div style={{ textAlign: 'left', flexShrink: 0, marginRight: 8 }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
-            {new Date(lead.visit_datetime).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+      {meetings.length===0&&<div className="empty"><div className="empty-icon">📅</div><div className="empty-title">אין פגישות מתוכננות</div></div>}
+
+      {Object.entries(grouped).map(([key,items])=>(
+        <div key={key}>
+          <div className={`meet-hdr ${key==='today'?'today':'other'}`}>
+            {key==='today'?'היום':key==='tomorrow'?'מחר':key}
           </div>
-          {lead.estimated_value && (
-            <div style={{ fontSize: 12, color: 'var(--text2)' }}>{fmt(lead.estimated_value)}</div>
-          )}
-        </div>
-      </div>
-
-      {lead.description && (
-        <div className="lead-desc" style={{ marginTop: 6 }}>{lead.description}</div>
-      )}
-
-      {/* כפתורי הערות */}
-      {!isManager && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-          <button
-            className="btn-action"
-            style={{ flex: 1, fontSize: 12, background: '#E6F1FB', color: '#185FA5' }}
-            onClick={() => { loadNotes(); setNoteType('prep') }}
-          >
-            📋 הכנה לפגישה
-          </button>
-          <button
-            className="btn-action"
-            style={{ flex: 1, fontSize: 12, background: '#EAF3DE', color: '#3B6D11' }}
-            onClick={() => { loadNotes(); setNoteType('summary') }}
-          >
-            📝 סיכום פגישה
-          </button>
-        </div>
-      )}
-
-      {/* הצג הערות קיימות */}
-      {!isManager && (
-        <button
-          style={{ fontSize: 12, color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 6, padding: 0 }}
-          onClick={() => { if (!showNotes) loadNotes(); setShowNotes(s => !s) }}
-        >
-          {showNotes ? '▲ הסתר הערות' : '▼ הצג הערות'}
-        </button>
-      )}
-
-      {showNotes && meetingNotes.length > 0 && (
-        <div style={{ marginTop: 8 }}>
-          {meetingNotes.map(n => (
-            <div key={n.id} style={{
-              fontSize: 13, background: 'var(--bg)', borderRadius: 8,
-              padding: '8px 10px', marginBottom: 6,
-              borderRight: n.content.startsWith('📋') ? '3px solid #185FA5' : '3px solid #3B6D11'
-            }}>
-              <div>{n.content}</div>
-              <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 3 }}>
-                {new Date(n.created_at).toLocaleDateString('he-IL', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}
+          {items.map(lead=>(
+            <div key={lead.id} className={`meet-item ${key==='today'?'t':''}`}>
+              <div style={{flex:1}}>
+                <div className="m-addr">{lead.project_address}</div>
+                <div className="m-client">{lead.client_name}{lead.description?` · ${lead.description}`:''}</div>
+                {isManager&&lead.agents?.name&&<div style={{fontSize:10,color:'#185FA5',marginTop:2}}>👤 {lead.agents.name}</div>}
+                {lead.lead_notes?.some(n=>n.content.startsWith('📋'))&&<div className="m-prep">📋 יש הכנה לפגישה</div>}
+                {!isManager&&(
+                  <div style={{display:'flex',gap:6,marginTop:8}}>
+                    <button onClick={()=>setNoteModal({lead,type:'prep'})}
+                      style={{fontSize:11,background:'#E6F1FB',color:'#185FA5',border:'none',borderRadius:20,padding:'4px 10px',cursor:'pointer',fontFamily:'inherit'}}>
+                      📋 הכנה
+                    </button>
+                    <button onClick={()=>setNoteModal({lead,type:'summary'})}
+                      style={{fontSize:11,background:'#E8F5EF',color:'#1D9E75',border:'none',borderRadius:20,padding:'4px 10px',cursor:'pointer',fontFamily:'inherit'}}>
+                      📝 סיכום
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className={`m-time ${key==='today'?'g':''}`}>
+                {new Date(lead.visit_datetime).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}
               </div>
             </div>
           ))}
         </div>
-      )}
-      {showNotes && meetingNotes.length === 0 && (
-        <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 6 }}>אין הערות עדיין</div>
-      )}
-    </div>
-  )
-}
-
-export default function MeetingsView({ agentId, isManager }) {
-  const [meetings, setMeetings] = useState([])
-  const [past, setPast] = useState([])
-  const [showPast, setShowPast] = useState(false)
-
-  const load = async () => {
-    let query = supabase
-      .from('leads')
-      .select(isManager ? '*, agents(name)' : '*')
-      .not('visit_datetime', 'is', null)
-      .order('visit_datetime', { ascending: true })
-
-    if (!isManager) {
-      query = query.eq('agent_id', agentId)
-    }
-
-    const { data } = await query
-    const now = new Date()
-    setMeetings((data || []).filter(l => new Date(l.visit_datetime) >= now))
-    setPast((data || []).filter(l => new Date(l.visit_datetime) < now))
-  }
-
-  useEffect(() => { load() }, [])
-
-  // קיבוץ לפי יום
-  const grouped = {}
-  meetings.forEach(l => {
-    const key = dayLabel(l.visit_datetime)
-    if (!grouped[key]) grouped[key] = []
-    grouped[key].push(l)
-  })
-
-  return (
-    <div dir="rtl" style={{ paddingBottom: 100 }}>
-      {meetings.length === 0 && (
-        <div className="empty-state" style={{ paddingTop: 40 }}>אין פגישות מתוכננות</div>
-      )}
-
-      {Object.entries(grouped).map(([day, leads]) => (
-        <div key={day}>
-          <div style={{
-            fontSize: 13, fontWeight: 600,
-            color: day.includes('היום') ? '#0F6E56' : 'var(--teal)',
-            padding: '10px 16px 6px',
-            background: day.includes('היום') ? '#E1F5EE' : 'var(--bg)',
-          }}>
-            {day}
-          </div>
-          {leads.map(lead => (
-            <MeetingCard
-              key={lead.id}
-              lead={lead}
-              isManager={isManager}
-              agentId={agentId}
-              onNoteAdded={load}
-            />
-          ))}
-        </div>
       ))}
 
-      {past.length > 0 && (
-        <div style={{ padding: '16px 16px 0' }}>
-          <button
-            className="btn-action"
-            style={{ width: '100%', fontSize: 13 }}
-            onClick={() => setShowPast(p => !p)}
-          >
-            {showPast ? '▲ הסתר פגישות קודמות' : `▼ פגישות קודמות (${past.length})`}
-          </button>
-          {showPast && past.slice().reverse().map(lead => (
-            <MeetingCard
-              key={lead.id}
-              lead={lead}
-              isManager={isManager}
-              agentId={agentId}
-              onNoteAdded={load}
-            />
+      {past.length>0&&(
+        <div style={{padding:'4px 0 12px'}}>
+          <div className="past-link" onClick={()=>setShowPast(p=>!p)}>
+            {showPast?'▲ הסתר':'▼'} פגישות קודמות ({past.length})
+          </div>
+          {showPast&&[...past].reverse().map(lead=>(
+            <div key={lead.id} className="meet-item" style={{opacity:.65}}>
+              <div>
+                <div className="m-addr">{lead.project_address}</div>
+                <div className="m-client">{lead.client_name}</div>
+                {isManager&&lead.agents?.name&&<div style={{fontSize:10,color:'#8E8E93'}}>👤 {lead.agents.name}</div>}
+                {!isManager&&(
+                  <button onClick={()=>setNoteModal({lead,type:'summary'})}
+                    style={{fontSize:11,background:'#E8F5EF',color:'#1D9E75',border:'none',borderRadius:20,padding:'4px 10px',cursor:'pointer',marginTop:6,fontFamily:'inherit'}}>
+                    📝 סיכום
+                  </button>
+                )}
+              </div>
+              <div className="m-time" style={{fontSize:14}}>
+                {new Date(lead.visit_datetime).toLocaleDateString('he-IL',{month:'short',day:'numeric'})}
+              </div>
+            </div>
           ))}
         </div>
       )}
