@@ -6,13 +6,57 @@ export const supabase = createClient(
 )
 
 export const STAGES = [
-  { key: 'incoming_call',   label: 'חדש',            color: '#185FA5', bg: '#E6F1FB', next: 'in_progress',   nextLabel: 'העבר לטיפול' },
-  { key: 'in_progress',     label: 'בתהליך',          color: '#854F0B', bg: '#FAEEDA', next: 'proposal_sent', nextLabel: 'הצעה נשלחה' },
-  { key: 'proposal_sent',   label: 'נשלחה הצעה',      color: '#534AB7', bg: '#EEEDFE', next: 'closed_won',    nextLabel: '🎉 נסגר! קבל מקדמה' },
-  { key: 'closed_won',      label: 'נסגר — בביצוע',   color: '#0F6E56', bg: '#E1F5EE', next: 'completed',     nextLabel: '✅ הושלם + תשלום סופי' },
-  { key: 'completed',       label: 'הושלם ✅',         color: '#3B6D11', bg: '#EAF3DE' },
-  { key: 'closed_lost',     label: 'אבוד',             color: '#A32D2D', bg: '#FCEBEB' },
-  { key: 'frozen',          label: '🧊 קפוא',          color: '#5F5E5A', bg: '#F1EFE8' },
+  {
+    key: 'incoming_call',
+    label: 'שיחה נכנסת',
+    color: '#185FA5', bg: '#E6F1FB',
+    next: 'in_progress',
+    nextLabel: 'העבר לטיפול',
+    ctaLabel: '📅 קבע ביקור',
+    ctaNext: 'in_progress',
+  },
+  {
+    key: 'in_progress',
+    label: 'בטיפול',
+    color: '#854F0B', bg: '#FAEEDA',
+    next: 'proposal_sent',
+    nextLabel: 'שלח למשרד להצעה',
+    ctaLabel: '📋 שלח למשרד להצעה',
+    ctaNext: 'proposal_sent',
+  },
+  {
+    key: 'proposal_sent',
+    label: 'מחכה לתשובה',
+    color: '#534AB7', bg: '#EEEDFE',
+    next: 'closed_won',
+    nextLabel: 'הלקוח אישר — נסגר!',
+    ctaLabel: '🎉 הלקוח אישר — נסגר!',
+    ctaNext: 'closed_won',
+  },
+  {
+    key: 'closed_won',
+    label: 'עובדים אצלו',
+    color: '#0F6E56', bg: '#E1F5EE',
+    next: 'completed',
+    nextLabel: 'סמן כהושלם',
+    ctaLabel: '✅ סמן כהושלם + תשלום סופי',
+    ctaNext: 'completed',
+  },
+  {
+    key: 'completed',
+    label: 'הושלם ✅',
+    color: '#3B6D11', bg: '#EAF3DE',
+  },
+  {
+    key: 'closed_lost',
+    label: 'אבוד',
+    color: '#A32D2D', bg: '#FCEBEB',
+  },
+  {
+    key: 'frozen',
+    label: '🧊 קפוא',
+    color: '#5F5E5A', bg: '#F1EFE8',
+  },
 ]
 
 export const stageInfo = (key) => STAGES.find(s => s.key === key) || STAGES[0]
@@ -31,17 +75,13 @@ export async function addLead(lead) {
   const { data, error } = await supabase
     .from('leads')
     .insert({ ...lead, agent_id: user.id, last_contact_at: new Date().toISOString() })
-    .select()
-    .single()
+    .select().single()
   if (error) throw error
   return data
 }
 
 export async function updateLead(leadId, updates) {
-  const { error } = await supabase
-    .from('leads')
-    .update(updates)
-    .eq('id', leadId)
+  const { error } = await supabase.from('leads').update(updates).eq('id', leadId)
   if (error) throw error
 }
 
@@ -87,35 +127,13 @@ export async function updateLeadCalendar(leadId, eventId, visitDatetime) {
   if (error) throw error
 }
 
-const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar.events'
-
 export async function signInWithGoogle() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { scopes: GCAL_SCOPE, redirectTo: window.location.origin }
+    options: {
+      scopes: 'https://www.googleapis.com/auth/calendar.events',
+      redirectTo: window.location.origin,
+    }
   })
   if (error) throw error
 }
-
-export async function createCalendarEvent(lead, datetime) {
-  const { data: { session } } = await supabase.auth.getSession()
-  const token = session?.provider_token
-  if (!token) throw new Error('אין Google token')
-  const start = new Date(datetime)
-  const end = new Date(start.getTime() + 60 * 60 * 1000)
-  const event = {
-    summary: lead.project_address,
-    description: [`לקוח: ${lead.client_name}`, `טלפון: ${lead.phone || '—'}`, `תיאור: ${lead.description || '—'}`, `סכום משוער: $${(lead.estimated_value || 0).toLocaleString()}`].join('\n'),
-    location: lead.project_address,
-    start: { dateTime: start.toISOString(), timeZone: 'America/New_York' },
-    end: { dateTime: end.toISOString(), timeZone: 'America/New_York' },
-  }
-  const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(event),
-  })
-  if (!res.ok) throw new Error('שגיאה ביצירת אירוע')
-  return await res.json()
-}
-
