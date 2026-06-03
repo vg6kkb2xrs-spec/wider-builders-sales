@@ -78,9 +78,9 @@ body{
 
 /* ===== BOTTOM NAV — BIT STYLE ===== */
 .nav{display:flex;background:#fff;border-top:.5px solid #E5E5EA;padding:8px 8px max(16px,env(safe-area-inset-bottom));gap:6px;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:100}
-.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;background:#fff;border:1px solid #E5E5EA;padding:10px 4px 8px;border-radius:14px;font-size:11px;font-weight:500;color:#8E8E93;font-family:inherit;transition:all .15s;position:relative;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.nb.on{color:#1D9E75;background:#F0FBF6;border-color:#9FE1CB;box-shadow:0 1px 3px rgba(29,158,117,.1)}
-.nb-icon{font-size:26px;line-height:1;color:inherit}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;background:#fff;border:1.5px solid #E5E5EA;padding:12px 4px 10px;border-radius:16px;font-size:11px;font-weight:600;color:#8E8E93;font-family:inherit;transition:all .15s;position:relative;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.nb.on{color:#1D9E75;background:#F0FBF6;border-color:#9FE1CB;box-shadow:0 1px 4px rgba(29,158,117,.12)}
+.nb-icon{font-size:28px;line-height:1;color:inherit}
 .nb-badge{position:absolute;top:-5px;right:-5px;background:#E24B4A;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;min-width:15px;text-align:center}
 
 /* ===== EMPTY STATE ===== */
