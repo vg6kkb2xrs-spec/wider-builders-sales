@@ -137,3 +137,24 @@ export async function signInWithGoogle() {
   })
   if (error) throw error
 }
+
+
+// ===== LOGS =====
+export async function addLog(leadId, action, details = null) {
+  const { data: { user } } = await supabase.auth.getUser()
+  await supabase.from('lead_logs').insert({
+    lead_id: leadId,
+    agent_id: user.id,
+    action,
+    details,
+  })
+}
+
+export async function getLogs(leadId) {
+  const { data } = await supabase
+    .from('lead_logs')
+    .select('*')
+    .eq('lead_id', leadId)
+    .order('created_at', { ascending: false })
+  return data || []
+}
