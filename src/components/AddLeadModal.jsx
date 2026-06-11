@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { addLead } from '../lib/supabase'
 import AddressInput from './AddressInput'
+import ClientInput from './ClientInput'
 
 export default function AddLeadModal({ onClose, onSaved }) {
   const [form, setForm] = useState({ project_address: '', client_name: '', phone: '', description: '', estimated_value: '' })
@@ -32,19 +33,15 @@ export default function AddLeadModal({ onClose, onSaved }) {
           <AddressInput
             value={form.project_address}
             onChange={v => set('project_address', v)}
-            placeholder="123 Ocean Ave, Brooklyn"
           />
         </div>
 
-        <div className="field">
-          <label>שם הלקוח *</label>
-          <input placeholder="John Smith" value={form.client_name} onChange={e => set('client_name', e.target.value)} />
-        </div>
-
-        <div className="field">
-          <label>טלפון</label>
-          <input placeholder="+1 718 555 0100" type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} />
-        </div>
+        <ClientInput
+          name={form.client_name}
+          phone={form.phone}
+          onChangeName={v => set('client_name', v)}
+          onChangePhone={v => set('phone', v)}
+        />
 
         <div className="field">
           <label>סכום משוער ($)</label>
