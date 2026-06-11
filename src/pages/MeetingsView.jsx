@@ -34,7 +34,6 @@ function AddMeetingModal({ agentId, onClose, onSaved }) {
     setSaving(true)
     try {
       if (form.lead_id) {
-        // Link to existing lead
         await supabase.from('leads').update({
           visit_datetime: new Date(form.datetime).toISOString(),
           last_contact_at: new Date().toISOString(),
@@ -42,15 +41,12 @@ function AddMeetingModal({ agentId, onClose, onSaved }) {
         const dateStr = new Date(form.datetime).toLocaleDateString('he-IL',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
         await addLog(form.lead_id, 'נקבעה פגישה', dateStr)
       } else {
-        // Standalone meeting - create a basic lead
+        // Standalone meeting - separate table
         const { data: { user } } = await supabase.auth.getUser()
-        await supabase.from('leads').insert({
-          project_address: form.title || 'פגישה כללית',
-          client_name: '',
+        await supabase.from('meetings').insert({
+          title: form.title || 'פגישה כללית',
           agent_id: user.id,
           visit_datetime: new Date(form.datetime).toISOString(),
-          stage: 'incoming_call',
-          last_contact_at: new Date().toISOString(),
         })
       }
       onSaved()
@@ -136,14 +132,26 @@ export default function MeetingsView({agentId,isManager}){
   const load=async()=>{
     let q=supabase.from('leads').select(isManager?'*, agents(name)':'*').not('visit_datetime','is',null).order('visit_datetime',{ascending:true})
     if(!isManager)q=q.eq('agent_id',agentId)
-    const {data}=await q
-    const now=new Date()
-    const todayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate())
-    setMeetings((data||[]).filter(l=>{
-      const d=new Date(l.visit_datetime)
-      return d>=todayStart
+    const {data:leadData}=await q
+
+    // Fetch standalone meetings
+    let mq=supabase.from('meetings').select(isManager?'*, agents(name)':'*').order('visit_datetime',{ascending:true})
+    if(!isManager)mq=mq.eq('agent_id',agentId)
+    const {data:meetData}=await mq
+
+    // Normalize standalone meetings to same shape
+    const standalones=(meetData||[]).map(m=>({
+      id:m.id, project_address:m.title,
+      client_name:'', visit_datetime:m.visit_datetime,
+      agents:m.agents, _standalone:true
     }))
-    setPast((data||[]).filter(l=>new Date(l.visit_datetime)<todayStart))
+
+    const all=[...(leadData||[]),...standalones].sort((a,b)=>new Date(a.visit_datetime)-new Date(b.visit_datetime))
+
+    const todayStart=new Date()
+    todayStart.setHours(0,0,0,0)
+    setMeetings(all.filter(l=>new Date(l.visit_datetime)>=todayStart))
+    setPast(all.filter(l=>new Date(l.visit_datetime)<todayStart))
   }
   useEffect(()=>{load()},[])
 
