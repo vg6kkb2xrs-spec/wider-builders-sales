@@ -73,7 +73,7 @@ function DetailScreen({lead,onBack,onUpdate,onSchedule}){
               {s.ctaLabel}
             </button>
           )}
-          {!isFinal&&!isFrozen&&(
+          {!isFinal&&!isFrozen&&s.key!=='incoming_call'&&(
             <button className="cta2" onClick={()=>onSchedule(lead)}>
               📅 {lead.visit_datetime?'עדכן פגישה':'קבע פגישה'}
             </button>
@@ -83,7 +83,16 @@ function DetailScreen({lead,onBack,onUpdate,onSchedule}){
           <div className="mini-g">
             <button className="mb" onClick={()=>setMode('edit')}>✏️ ערוך</button>
             <button className="mb" onClick={()=>setMode('note')}>📝 הוסף הערה</button>
-            {!isFinal&&<button className="mb" onClick={async()=>{await markContacted(lead.id);onUpdate()}}>✅ יצרתי קשר</button>}
+            {!isFinal&&<button className="mb" onClick={async()=>{
+              await markContacted(lead.id)
+              onUpdate()
+              // Show toast
+              const toast = document.createElement('div')
+              toast.textContent = '✅ נשמר — יצרתי קשר'
+              toast.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1D9E75;color:white;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2)'
+              document.body.appendChild(toast)
+              setTimeout(() => toast.remove(), 2500)
+            }}>✅ יצרתי קשר</button>}
             {!isFinal&&!isFrozen&&<button className="mb" onClick={()=>doStage('frozen')}>🧊 הקפא</button>}
             {!isFinal&&<button className="mb r" onClick={()=>{if(confirm('לסמן כאבוד?'))doStage('closed_lost')}}>✗ אבד</button>}
           </div>
@@ -158,6 +167,7 @@ export default function LeadCard({lead,onUpdate,onSchedule}){
       <div style={{flex:1,minWidth:0}}>
         <div className="l-addr">{lead.project_address}</div>
         <div className="l-client">{lead.client_name}</div>
+        {lead.description&&<div style={{fontSize:11,color:'#8E8E93',marginTop:2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lead.description.slice(0,40)}{lead.description.length>40?'...':''}</div>}
         {lead.estimated_value&&<div className="l-amt">${Number(lead.estimated_value).toLocaleString()}</div>}
         {lead.visit_datetime&&<div className="l-visit">📅 {new Date(lead.visit_datetime).toLocaleDateString('he-IL',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>}
       </div>
@@ -168,3 +178,4 @@ export default function LeadCard({lead,onUpdate,onSchedule}){
     </div>
   )
 }
+
