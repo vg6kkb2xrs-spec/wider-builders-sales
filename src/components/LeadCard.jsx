@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { stageInfo, STAGES, updateLeadStage, markContacted, addNote, updateLead } from '../lib/supabase'
+import { useState, useEffect } from 'react'
+import { stageInfo, STAGES, updateLeadStage, markContacted, addNote, updateLead, addLog, getLogs } from '../lib/supabase'
 
 const fmt=(n)=>n?`$${Number(n).toLocaleString()}`:null
 const daysSince=(d)=>d?Math.floor((Date.now()-new Date(d).getTime())/86400000):null
@@ -7,6 +7,8 @@ const ACTIVE_STAGES=['incoming_call','in_progress','proposal_sent','closed_won',
 
 function DetailScreen({lead,onBack,onUpdate,onSchedule}){
   const [mode,setMode]=useState('view')
+  const [logs,setLogs]=useState([])
+  const [showLogs,setShowLogs]=useState(true)
   const [noteText,setNoteText]=useState('')
   const [saving,setSaving]=useState(false)
   const [editForm,setEditForm]=useState({
@@ -17,12 +19,21 @@ function DetailScreen({lead,onBack,onUpdate,onSchedule}){
 
   const s=stageInfo(lead.stage)
   const isFinal=['completed','closed_lost'].includes(lead.stage)
+
+  useEffect(()=>{
+    getLogs(lead.id).then(setLogs)
+  },[lead.id])
+
+  const refreshLogs=()=>getLogs(lead.id).then(setLogs)
   const isFrozen=lead.stage==='frozen'
   const idx=ACTIVE_STAGES.indexOf(lead.stage)
 
   const doStage=async(stage)=>{
     setSaving(true)
+    const oldStage=stageInfo(lead.stage).label
+    const newStage=stageInfo(stage).label
     await updateLeadStage(lead.id,stage)
+    await addLog(lead.id,'שינוי שלב',`${oldStage} ← ${newStage}`)
     setSaving(false);onUpdate();onBack()
   }
   const doNote=async()=>{
@@ -85,13 +96,14 @@ function DetailScreen({lead,onBack,onUpdate,onSchedule}){
             <button className="mb" onClick={()=>setMode('note')}>📝 הוסף הערה</button>
             {!isFinal&&<button className="mb" onClick={async()=>{
               await markContacted(lead.id)
+              await addLog(lead.id,'יצרתי קשר')
+              refreshLogs()
               onUpdate()
-              // Show toast
-              const toast = document.createElement('div')
-              toast.textContent = '✅ נשמר — יצרתי קשר'
-              toast.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1D9E75;color:white;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2)'
+              const toast=document.createElement('div')
+              toast.textContent='✅ נשמר — יצרתי קשר'
+              toast.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1D9E75;color:white;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2)'
               document.body.appendChild(toast)
-              setTimeout(() => toast.remove(), 2500)
+              setTimeout(()=>toast.remove(),2500)
             }}>✅ יצרתי קשר</button>}
             {!isFinal&&!isFrozen&&<button className="mb" onClick={()=>doStage('frozen')}>🧊 הקפא</button>}
             {!isFinal&&<button className="mb r" onClick={()=>{if(confirm('לסמן כאבוד?'))doStage('closed_lost')}}>✗ אבד</button>}
@@ -109,6 +121,30 @@ function DetailScreen({lead,onBack,onUpdate,onSchedule}){
               ))}
             </div>
           )}
+
+          {/* LOGS */}
+          <div style={{margin:'12px 10px 0'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+              <div style={{fontSize:11,fontWeight:700,color:'#8E8E93',letterSpacing:.4,textTransform:'uppercase'}}>היסטוריה</div>
+              <button onClick={()=>setShowLogs(s=>!s)} style={{fontSize:11,color:'#8E8E93',background:'none',border:'none',cursor:'pointer'}}>
+                {showLogs?'▲ הסתר':'▼ הצג'}
+              </button>
+            </div>
+            {showLogs && logs.length===0 && <div style={{fontSize:12,color:'#8E8E93'}}>אין פעולות עדיין</div>}
+            {showLogs && logs.map(log=>(
+              <div key={log.id} style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:8}}>
+                <div style={{width:2,background:'#E5E5EA',borderRadius:1,alignSelf:'stretch',flexShrink:0,marginTop:4}}/>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,fontWeight:500,color:'#1a1a1a'}}>{log.action}</div>
+                  {log.details&&<div style={{fontSize:11,color:'#8E8E93',marginTop:1}}>{log.details}</div>}
+                  <div style={{fontSize:10,color:'#B0B0B0',marginTop:2}}>
+                    {new Date(log.created_at).toLocaleDateString('he-IL',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{height:20}}/>
         </>}
 
         {mode==='note'&&(
@@ -178,4 +214,5 @@ export default function LeadCard({lead,onUpdate,onSchedule}){
     </div>
   )
 }
+
 
