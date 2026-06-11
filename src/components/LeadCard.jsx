@@ -41,6 +41,7 @@ function StageBar({ currentStage, onStageChange, saving }) {
                   height: 2,
                   background: i <= currentIdx ? '#1D9E75' : '#E5E5EA',
                   zIndex: 0,
+                  overflow: 'hidden',
                 }}/>
               )}
               {/* dot */}
@@ -144,7 +145,7 @@ function DetailScreen({ lead, onBack, onUpdate, onSchedule }) {
   }
 
   return (
-    <div style={{ background: '#F2F2F7', minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 64 }} dir="rtl">
+    <div style={{ background: '#F2F2F7', minHeight: '100dvh', display: 'flex', flexDirection: 'column', paddingBottom: 64, overflowX: 'hidden', width: '100%' }} dir="rtl">
       {/* Header */}
       <div className="det-h">
         <button className="back-pill" onClick={onBack}>
@@ -300,7 +301,7 @@ export default function LeadCard({ lead, onUpdate, onSchedule }) {
   const isStale = (days||0) >= 7 && !['completed','closed_lost','frozen'].includes(lead.stage)
 
   if (open) return (
-    <div style={{ position:'fixed', inset:0, zIndex:200, overflowY:'auto', background:'#F2F2F7' }}>
+    <div style={{ position:'fixed', inset:0, zIndex:200, overflowY:'auto', overflowX:'hidden', background:'#F2F2F7', width:'100%' }}>
       <DetailScreen lead={{...lead}} onBack={() => setOpen(false)} onUpdate={() => { setOpen(false); onUpdate() }} onSchedule={onSchedule}/>
     </div>
   )
