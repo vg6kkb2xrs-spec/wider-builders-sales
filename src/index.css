@@ -100,7 +100,7 @@ body{
 .step.c{background:rgba(255,255,255,.7)}
 .step-lbl{font-size:10px;opacity:.75;margin-top:5px}
 
-.det-body{flex:1;background:#F2F2F7;overflow-y:auto;padding-bottom:8px}
+.det-body{flex:1;background:#F2F2F7;overflow-y:auto;overflow-x:hidden;padding-bottom:8px}
 .info-card{background:#fff;margin:10px 10px 0;border-radius:14px;overflow:hidden}
 .ir{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:.5px solid #F2F2F7}
 .ir:last-child{border-bottom:none}
