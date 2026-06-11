@@ -2,8 +2,17 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { addLog } from '../lib/supabase'
 
-function isToday(d){return new Date(d).toDateString()===new Date().toDateString()}
-function isTomorrow(d){const t=new Date();t.setDate(t.getDate()+1);return new Date(d).toDateString()===t.toDateString()}
+function isToday(d){
+  const date=new Date(d)
+  const now=new Date()
+  return date.getFullYear()===now.getFullYear()&&date.getMonth()===now.getMonth()&&date.getDate()===now.getDate()
+}
+function isTomorrow(d){
+  const date=new Date(d)
+  const tom=new Date()
+  tom.setDate(tom.getDate()+1)
+  return date.getFullYear()===tom.getFullYear()&&date.getMonth()===tom.getMonth()&&date.getDate()===tom.getDate()
+}
 
 function AddMeetingModal({ agentId, onClose, onSaved }) {
   const [form, setForm] = useState({ title:'', datetime:'', lead_id:'' })
@@ -129,8 +138,12 @@ export default function MeetingsView({agentId,isManager}){
     if(!isManager)q=q.eq('agent_id',agentId)
     const {data}=await q
     const now=new Date()
-    setMeetings((data||[]).filter(l=>new Date(l.visit_datetime)>=now))
-    setPast((data||[]).filter(l=>new Date(l.visit_datetime)<now))
+    const todayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate())
+    setMeetings((data||[]).filter(l=>{
+      const d=new Date(l.visit_datetime)
+      return d>=todayStart
+    }))
+    setPast((data||[]).filter(l=>new Date(l.visit_datetime)<todayStart))
   }
   useEffect(()=>{load()},[])
 
