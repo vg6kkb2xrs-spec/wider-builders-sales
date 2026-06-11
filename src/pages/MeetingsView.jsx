@@ -1,8 +1,92 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { addLog } from '../lib/supabase'
 
 function isToday(d){return new Date(d).toDateString()===new Date().toDateString()}
 function isTomorrow(d){const t=new Date();t.setDate(t.getDate()+1);return new Date(d).toDateString()===t.toDateString()}
+
+function AddMeetingModal({ agentId, onClose, onSaved }) {
+  const [form, setForm] = useState({ title:'', datetime:'', lead_id:'' })
+  const [leads, setLeads] = useState([])
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    supabase.from('leads')
+      .select('id, project_address, client_name')
+      .eq('agent_id', agentId)
+      .not('stage', 'in', '(completed,closed_lost)')
+      .order('updated_at', { ascending: false })
+      .then(({ data }) => setLeads(data || []))
+  }, [])
+
+  const save = async () => {
+    if (!form.datetime) return setError('בחר תאריך ושעה')
+    setSaving(true)
+    try {
+      if (form.lead_id) {
+        // Link to existing lead
+        await supabase.from('leads').update({
+          visit_datetime: new Date(form.datetime).toISOString(),
+          last_contact_at: new Date().toISOString(),
+        }).eq('id', form.lead_id)
+        const dateStr = new Date(form.datetime).toLocaleDateString('he-IL',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+        await addLog(form.lead_id, 'נקבעה פגישה', dateStr)
+      } else {
+        // Standalone meeting - create a basic lead
+        const { data: { user } } = await supabase.auth.getUser()
+        await supabase.from('leads').insert({
+          project_address: form.title || 'פגישה כללית',
+          client_name: '',
+          agent_id: user.id,
+          visit_datetime: new Date(form.datetime).toISOString(),
+          stage: 'incoming_call',
+          last_contact_at: new Date().toISOString(),
+        })
+      }
+      onSaved()
+    } catch(e) { setError(e.message) }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()} dir="rtl">
+        <div className="modal-head">
+          <h2>הוסף פגישה</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="field">
+          <label>קשר לליד קיים (אופציונלי)</label>
+          <select value={form.lead_id} onChange={e=>setForm(f=>({...f,lead_id:e.target.value}))}>
+            <option value="">— פגישה עצמאית —</option>
+            {leads.map(l=>(
+              <option key={l.id} value={l.id}>{l.project_address} · {l.client_name}</option>
+            ))}
+          </select>
+        </div>
+
+        {!form.lead_id && (
+          <div className="field">
+            <label>כותרת הפגישה</label>
+            <input placeholder="לדוגמה: ישיבת צוות, פגישת לקוח..." value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))}/>
+          </div>
+        )}
+
+        <div className="field">
+          <label>תאריך ושעה</label>
+          <input type="datetime-local" value={form.datetime} onChange={e=>setForm(f=>({...f,datetime:e.target.value}))}/>
+        </div>
+
+        {error && <div className="field-error">{error}</div>}
+        <button className="submit-btn" onClick={save} disabled={saving}>
+          {saving ? 'שומר...' : '📅 הוסף פגישה'}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function NoteModal({lead,type,agentId,onClose,onSaved}){
   const [text,setText]=useState('')
@@ -38,6 +122,7 @@ export default function MeetingsView({agentId,isManager}){
   const [past,setPast]=useState([])
   const [showPast,setShowPast]=useState(false)
   const [noteModal,setNoteModal]=useState(null)
+  const [showAdd,setShowAdd]=useState(false)
 
   const load=async()=>{
     let q=supabase.from('leads').select(isManager?'*, agents(name)':'*').not('visit_datetime','is',null).order('visit_datetime',{ascending:true})
@@ -56,7 +141,11 @@ export default function MeetingsView({agentId,isManager}){
     grouped[key].push(l)
   })
 
-  const dayLabel=(key)=>key==='today'?'היום':key==='tomorrow'?'מחר, '+new Date(meetings.find(l=>{const d=new Date(l.visit_datetime);const t=new Date();t.setDate(t.getDate()+1);return d.toDateString()===t.toDateString()})?.visit_datetime).toLocaleDateString('he-IL',{weekday:'long'}):key
+  const dayLabel=(key)=>{
+    if(key==='today') return 'היום'
+    if(key==='tomorrow') return 'מחר'
+    return key
+  }
 
   return(
     <div className="body" dir="rtl">
@@ -64,19 +153,35 @@ export default function MeetingsView({agentId,isManager}){
         <NoteModal lead={noteModal.lead} type={noteModal.type} agentId={agentId}
           onClose={()=>setNoteModal(null)} onSaved={load}/>
       )}
+      {showAdd&&(
+        <AddMeetingModal agentId={agentId} onClose={()=>setShowAdd(false)} onSaved={()=>{setShowAdd(false);load()}}/>
+      )}
 
-      {meetings.length===0&&<div className="empty"><div className="empty-icon">📅</div><div className="empty-title">אין פגישות מתוכננות</div></div>}
+      {/* Add meeting button */}
+      {!isManager && (
+        <div style={{padding:'10px 10px 0'}}>
+          <button className="add-btn" onClick={()=>setShowAdd(true)}>
+            <i className="ti ti-calendar-plus" style={{fontSize:16}} aria-hidden="true"/>
+            הוסף פגישה
+          </button>
+        </div>
+      )}
+
+      {meetings.length===0&&(
+        <div className="empty">
+          <div className="empty-icon">📅</div>
+          <div className="empty-title">אין פגישות מתוכננות</div>
+        </div>
+      )}
 
       {Object.entries(grouped).map(([key,items])=>(
         <div key={key}>
-          <div className={`meet-hdr ${key==='today'?'today':'other'}`}>
-            {key==='today'?'היום':key==='tomorrow'?'מחר':key}
-          </div>
+          <div className={`meet-hdr ${key==='today'?'today':'other'}`}>{dayLabel(key)}</div>
           {items.map(lead=>(
             <div key={lead.id} className={`meet-item ${key==='today'?'t':''}`}>
               <div style={{flex:1}}>
                 <div className="m-addr">{lead.project_address}</div>
-                <div className="m-client">{lead.client_name}{lead.description?` · ${lead.description}`:''}</div>
+                {lead.client_name && <div className="m-client">{lead.client_name}{lead.description?` · ${lead.description}`:''}</div>}
                 {isManager&&lead.agents?.name&&<div style={{fontSize:10,color:'#185FA5',marginTop:2}}>👤 {lead.agents.name}</div>}
                 {lead.lead_notes?.some(n=>n.content.startsWith('📋'))&&<div className="m-prep">📋 יש הכנה לפגישה</div>}
                 {!isManager&&(
@@ -109,7 +214,7 @@ export default function MeetingsView({agentId,isManager}){
             <div key={lead.id} className="meet-item" style={{opacity:.65}}>
               <div>
                 <div className="m-addr">{lead.project_address}</div>
-                <div className="m-client">{lead.client_name}</div>
+                {lead.client_name&&<div className="m-client">{lead.client_name}</div>}
                 {isManager&&lead.agents?.name&&<div style={{fontSize:10,color:'#8E8E93'}}>👤 {lead.agents.name}</div>}
                 {!isManager&&(
                   <button onClick={()=>setNoteModal({lead,type:'summary'})}
