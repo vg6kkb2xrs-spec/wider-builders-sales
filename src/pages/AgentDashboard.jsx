@@ -129,7 +129,7 @@ export default function AgentDashboard({session}){
       {tab==='leads'&&<div className="body">
         <input className="search-bar" placeholder="🔍 חפש כתובת, שם, טלפון" value={search} onChange={e=>setSearch(e.target.value)}/>
         <div className="filter-row">
-          {[{k:'active',l:'פעיל'},{k:'closed_won',l:'בביצוע'},{k:'completed',l:'הושלם'},{k:'lost',l:'אבוד'},{k:'frozen',l:'🧊'},{k:'all',l:'הכל'}].map(t=>(
+          {[{k:'active',l:'פעיל'},{k:'closed_won',l:'בביצוע'},{k:'completed',l:'הושלם'},{k:'lost',l:'אבוד'},{k:'frozen',l:'🧊 קפואים'},{k:'all',l:'הכל'}].map(t=>(
             <button key={t.k} className={`f-tab ${filter===t.k?'on':''}`} onClick={()=>setFilter(t.k)}>{t.l}</button>
           ))}
         </div>
@@ -162,3 +162,4 @@ export default function AgentDashboard({session}){
     </div>
   )
 }
+
