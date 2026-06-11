@@ -19,57 +19,46 @@ const SPECIAL_STAGES = {
 
 function StageBar({ currentStage, onStageChange, saving }) {
   const currentIdx = PIPELINE.indexOf(currentStage)
-  const isFinalStage = ['completed','closed_lost','frozen'].includes(currentStage)
+  const isSpecial = ['closed_lost','frozen'].includes(currentStage)
+  const special = SPECIAL_STAGES[currentStage]
+  const n = PIPELINE.length
+  const pct = n > 1 ? (currentIdx / (n - 1)) * 100 : 0
 
   return (
-    <div style={{ padding: '14px 12px 10px', background: '#fff', borderBottom: '.5px solid #F2F2F7' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#8E8E93', letterSpacing: .4, textTransform: 'uppercase', marginBottom: 10 }}>
+    <div style={{padding:'14px 12px 10px',background:'#fff',borderBottom:'.5px solid #F2F2F7'}}>
+      <div style={{fontSize:10,fontWeight:700,color:'#8E8E93',letterSpacing:.4,textTransform:'uppercase',marginBottom:12}}>
         שינוי שלב
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-        {PIPELINE.map((key, i) => {
-          const isCurrent = i === currentIdx
-          const isDone = i < currentIdx
-          const isNext = i === currentIdx + 1
-
-          return (
-            <div key={key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-              {/* connector line */}
-              {i > 0 && (
-                <div style={{
-                  position: 'absolute', top: 11, right: '50%', left: '-50%',
-                  height: 2,
-                  background: i <= currentIdx ? '#1D9E75' : '#E5E5EA',
-                  zIndex: 0,
-                  overflow: 'hidden',
-                }}/>
-              )}
-              {/* dot */}
-              <button
-                onClick={() => !saving && i !== currentIdx && onStageChange(key)}
-                disabled={saving}
-                style={{
-                  width: 22, height: 22, borderRadius: '50%', border: 'none',
-                  background: isDone ? '#1D9E75' : isCurrent ? '#1D9E75' : '#E5E5EA',
-                  cursor: i !== currentIdx ? 'pointer' : 'default',
-                  zIndex: 1, position: 'relative', flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: isCurrent ? '0 0 0 3px rgba(29,158,117,.2)' : 'none',
-                  transition: 'all .2s',
-                  outline: isNext ? '2px dashed #9FE1CB' : 'none',
-                  outlineOffset: 2,
-                }}
-              >
-                {isDone && <span style={{ color: '#fff', fontSize: 11 }}>✓</span>}
-                {isCurrent && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', display: 'block' }}/>}
+      {isSpecial && (
+        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+          <span style={{fontSize:13,fontWeight:700,color:special?.color,background:special?.bg,padding:'4px 14px',borderRadius:20}}>
+            {special?.label}
+          </span>
+          <button onClick={()=>onStageChange('incoming_call')}
+            style={{fontSize:12,color:'#185FA5',background:'#E6F1FB',border:'.5px solid #B5D4F4',borderRadius:20,padding:'4px 12px',cursor:'pointer',fontFamily:'inherit'}}>
+            ← חזור לפעיל
+          </button>
+        </div>
+      )}
+      <div style={{position:'relative',display:'flex',alignItems:'flex-start',paddingBottom:4}}>
+        <div style={{position:'absolute',top:9,right:'10px',left:'10px',height:2,background:'#E5E5EA',zIndex:0}}/>
+        <div style={{position:'absolute',top:9,right:'10px',left:'10px',height:2,background:'#1D9E75',zIndex:0,
+          width:`calc(${pct}% * (100% - 20px) / 100)`,transition:'width .3s',maxWidth:'calc(100% - 20px)'}}/>
+        {PIPELINE.map((key,i)=>{
+          const isCurrent=i===currentIdx, isDone=i<currentIdx
+          return(
+            <div key={key} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',zIndex:1}}>
+              <button onClick={()=>!saving&&!isCurrent&&onStageChange(key)} disabled={saving}
+                style={{width:20,height:20,borderRadius:'50%',border:'none',padding:0,
+                  background:isDone||isCurrent?'#1D9E75':'#E5E5EA',
+                  cursor:!isCurrent?'pointer':'default',
+                  display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
+                  boxShadow:isCurrent?'0 0 0 3px rgba(29,158,117,.2)':'none'}}>
+                {isDone&&<span style={{color:'#fff',fontSize:10,lineHeight:1}}>✓</span>}
+                {isCurrent&&<span style={{width:7,height:7,borderRadius:'50%',background:'#fff',display:'block'}}/>}
               </button>
-              {/* label */}
-              <div style={{
-                fontSize: 9, marginTop: 4, textAlign: 'center', lineHeight: 1.2,
-                color: isCurrent ? '#1D9E75' : isDone ? '#1D9E75' : '#B0B0B0',
-                fontWeight: isCurrent ? 700 : 400,
-                maxWidth: 52,
-              }}>
+              <div style={{fontSize:9,marginTop:5,textAlign:'center',lineHeight:1.2,maxWidth:54,
+                color:isCurrent||isDone?'#1D9E75':'#C0C0C0',fontWeight:isCurrent?700:400}}>
                 {PIPELINE_LABELS[key].replace(' ✅','')}
               </div>
             </div>
@@ -331,3 +320,4 @@ export default function LeadCard({ lead, onUpdate, onSchedule }) {
     </div>
   )
 }
+
