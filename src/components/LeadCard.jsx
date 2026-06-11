@@ -12,12 +12,14 @@ const PIPELINE_LABELS = {
   closed_won: 'עובדים אצלו',
   completed: 'הושלם ✅',
 }
+const SPECIAL_STAGES = {
+  frozen: { label: '🧊 קפוא', color: '#5F5E5A', bg: '#F1EFE8' },
+  closed_lost: { label: '✗ אבוד', color: '#A32D2D', bg: '#FCEBEB' },
+}
 
 function StageBar({ currentStage, onStageChange, saving }) {
   const currentIdx = PIPELINE.indexOf(currentStage)
   const isFinalStage = ['completed','closed_lost','frozen'].includes(currentStage)
-
-  if (isFinalStage) return null
 
   return (
     <div style={{ padding: '14px 12px 10px', background: '#fff', borderBottom: '.5px solid #F2F2F7' }}>
