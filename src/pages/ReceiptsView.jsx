@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { getReceipts, addReceipt, updateReceipt, deleteReceipt } from '../lib/supabase'
-import { uploadFileToDrive, appendToSheet, updateSheetRow, getSavedSheetId, saveSheetId } from '../lib/googleApi'
+import { uploadFileToDrive, appendToSheet, updateSheetRow, getSavedSheetId, saveSheetId, ensureGoogleToken } from '../lib/googleApi'
 
 const fmt = (n) => `$${Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2})}`
 
@@ -340,11 +340,24 @@ export default function ReceiptsView({ isManager, autoTriggerUpload }) {
   }
   useEffect(() => { load() }, [])
 
-  useEffect(() => {
-    if (autoTriggerUpload && fileInputRef.current) {
-      fileInputRef.current.click()
+  // Note: we deliberately do NOT auto-click the file input here.
+  // Programmatically triggering file pickers / OAuth popups outside of a
+  // direct, synchronous user tap is blocked by mobile browsers (especially
+  // iOS Safari), which previously caused the upload flow to hang silently.
+  // Instead, autoTriggerUpload just highlights the upload zone so the user
+  // can tap it themselves - one extra tap, but it actually works.
+
+  const handleUploadTap = async () => {
+    // Request Google authorization directly on tap, as close to the user
+    // gesture as possible, so mobile browsers don't block the OAuth popup.
+    setScanError('')
+    try {
+      await ensureGoogleToken()
+      fileInputRef.current?.click()
+    } catch (err) {
+      setScanError(err.message || 'לא ניתן להתחבר ל-Google. אפשר חלונות קופצים (popups) ונסה שוב.')
     }
-  }, [autoTriggerUpload])
+  }
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0]
@@ -357,11 +370,12 @@ export default function ReceiptsView({ isManager, autoTriggerUpload }) {
 
     setScanError('')
     setScanning(true)
+    let fileUrl = null
     try {
       const base64 = await fileToBase64(file)
       const mediaType = file.type || 'image/jpeg'
 
-      const [scanRes, fileUrl] = await Promise.all([
+      const [scanRes, driveResult] = await Promise.all([
         fetch('/api/scan-receipt', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -375,8 +389,14 @@ export default function ReceiptsView({ isManager, autoTriggerUpload }) {
             throw new Error('שרת הסריקה לא זמין כרגע. נסה שוב בעוד רגע.')
           }
         }),
-        uploadFileToDrive(file).catch(err => { console.error('Drive upload failed', err); return null }),
+        uploadFileToDrive(file).catch(err => {
+          console.error('Drive upload failed', err)
+          setScanError('הקובץ נסרק בהצלחה, אך ההעלאה ל-Google Drive נכשלה. הקבלה תישמר ללא קישור לקובץ.')
+          return null
+        }),
       ])
+
+      fileUrl = driveResult
 
       if (scanRes.error) throw new Error(scanRes.error)
 
@@ -434,8 +454,14 @@ export default function ReceiptsView({ isManager, autoTriggerUpload }) {
 
       <div style={{ margin:'0 12px 10px' }}>
         <input ref={fileInputRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display:'none' }} id="receipt-upload" />
-        <label htmlFor="receipt-upload"
-          style={{ display:'block', border:'1.5px dashed #B5D4F4', borderRadius:14, padding:20, textAlign:'center', background:'#E6F1FB', cursor: scanning ? 'default' : 'pointer' }}>
+        <div onClick={scanning ? undefined : handleUploadTap}
+          style={{
+            display:'block', borderRadius:14, padding:20, textAlign:'center', cursor: scanning ? 'default' : 'pointer',
+            border: autoTriggerUpload ? '2px solid #1D9E75' : '1.5px dashed #B5D4F4',
+            background: autoTriggerUpload ? '#E1F5EE' : '#E6F1FB',
+            boxShadow: autoTriggerUpload ? '0 0 0 3px rgba(29,158,117,.15)' : 'none',
+            transition: 'all .2s',
+          }}>
           {scanning ? (
             <>
               <div style={{ fontSize:28, marginBottom:6 }}>⏳</div>
@@ -444,10 +470,12 @@ export default function ReceiptsView({ isManager, autoTriggerUpload }) {
           ) : (
             <>
               <div style={{ fontSize:28, marginBottom:6 }}>📄</div>
-              <div style={{ fontSize:12, color:'#185FA5', fontWeight:600 }}>העלה תמונה או PDF של קבלה</div>
+              <div style={{ fontSize:12, color:'#185FA5', fontWeight:600 }}>
+                {autoTriggerUpload ? '👆 לחץ כאן להעלות תמונה או PDF' : 'העלה תמונה או PDF של קבלה'}
+              </div>
             </>
           )}
-        </label>
+        </div>
         {scanError && <div className="field-error" style={{ marginTop:8 }}>{scanError}</div>}
       </div>
 
@@ -485,6 +513,7 @@ export default function ReceiptsView({ isManager, autoTriggerUpload }) {
     </div>
   )
 }
+
 
 
 
