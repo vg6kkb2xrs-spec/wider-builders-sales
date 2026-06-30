@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { supabase, getTasks, addTask, toggleTask, deleteTask } from '../lib/supabase'
+import { supabase, getTasks, toggleTask } from '../lib/supabase'
+import AddEventModal from '../components/AddEventModal'
 
 const HE_DAYS = ['א','ב','ג','ד','ה','ו','ש']
 const HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
@@ -16,49 +17,6 @@ function sameDay(a, b) {
   return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate()
 }
 
-function AddTaskModal({ defaultDate, onClose, onSaved }) {
-  const [title, setTitle] = useState('')
-  const [datetime, setDatetime] = useState(() => {
-    const d = new Date(defaultDate)
-    d.setHours(d.getHours()+1, 0, 0, 0)
-    return d.toISOString().slice(0,16)
-  })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-
-  const save = async () => {
-    if (!title.trim()) return setError('כתוב מה התזכורת')
-    if (!datetime) return setError('בחר תאריך ושעה')
-    setSaving(true)
-    try {
-      await addTask(title.trim(), new Date(datetime).toISOString())
-      onSaved()
-    } catch(e) { setError(e.message) }
-    finally { setSaving(false) }
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} dir="rtl">
-        <div className="modal-head">
-          <h2>הוסף משימה / תזכורת</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
-        <div className="field">
-          <label>מה התזכורת?</label>
-          <input placeholder="להתקשר לספק חיפוי..." value={title} onChange={e => setTitle(e.target.value)} autoFocus />
-        </div>
-        <div className="field">
-          <label>תאריך ושעה</label>
-          <input type="datetime-local" value={datetime} onChange={e => setDatetime(e.target.value)} />
-        </div>
-        {error && <div className="field-error">{error}</div>}
-        <button className="submit-btn" onClick={save} disabled={saving}>{saving ? 'שומר...' : 'הוסף'}</button>
-      </div>
-    </div>
-  )
-}
-
 function EventRow({ item, onToggleTask }) {
   if (item._type === 'task') {
     return (
@@ -68,7 +26,10 @@ function EventRow({ item, onToggleTask }) {
         </div>
         <div style={{ flex:1 }}>
           <div className={`event-title-text ${item.done ? 'done-text' : ''}`}>{item.title}</div>
-          <div className="event-sub-text">{new Date(item.due_datetime).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</div>
+          <div className="event-sub-text">
+            {new Date(item.due_datetime).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}
+            {item.leads && ` · ${item.leads.project_address}`}
+          </div>
         </div>
         <span className="event-badge task-badge">משימה</span>
       </div>
@@ -153,7 +114,7 @@ export default function CalendarView({ agentId }) {
 
   return (
     <div className="body" dir="rtl">
-      {showAdd && <AddTaskModal defaultDate={selectedDate} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
+      {showAdd && <AddEventModal agentId={agentId} defaultDate={selectedDate} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
 
       {/* View toggle */}
       <div style={{ display:'flex', background:'rgba(0,0,0,.03)', borderRadius:10, padding:3, margin:'10px 12px' }}>
@@ -286,9 +247,10 @@ export default function CalendarView({ agentId }) {
 
       <button className="add-btn" onClick={() => setShowAdd(true)}>
         <i className="ti ti-plus" style={{ fontSize:16 }} aria-hidden="true"/>
-        הוסף משימה / תזכורת
+        הוסף ליומן
       </button>
     </div>
   )
 }
+
 
