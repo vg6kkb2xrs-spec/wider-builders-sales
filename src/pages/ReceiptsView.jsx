@@ -69,7 +69,8 @@ function ReviewModal({ scanned, fileUrl, leads, onClose, onSaved }) {
     if (!form.transaction_type) return setError('בחר סוג עסקה')
     setSaving(true)
     try {
-      const timestamp = new Date().toISOString()
+      const now = new Date()
+      const timestamp = now.toLocaleDateString('en-US', { year:'numeric', month:'2-digit', day:'2-digit' }) + ' ' + now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:true })
       const receipt = await addReceipt({
         project_name: form.project_name || null,
         transaction_type: form.transaction_type,
@@ -320,3 +321,4 @@ export default function ReceiptsView({ isManager }) {
     </div>
   )
 }
+
