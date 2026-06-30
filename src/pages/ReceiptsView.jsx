@@ -192,6 +192,12 @@ export default function ReceiptsView({ isManager }) {
   const handleFile = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    if (file.size > 6 * 1024 * 1024) {
+      setScanError('הקובץ גדול מדי (מקסימום 6MB). נסה תמונה קטנה יותר או PDF דחוס.')
+      return
+    }
+
     setScanError('')
     setScanning(true)
     try {
@@ -203,7 +209,15 @@ export default function ReceiptsView({ isManager }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageBase64: base64, mediaType, projectAddresses: leads.map(l => l.project_address) }),
-        }).then(r => r.json()),
+        }).then(async r => {
+          const text = await r.text()
+          try {
+            return JSON.parse(text)
+          } catch {
+            console.error('Non-JSON response from scan-receipt:', text.slice(0, 200))
+            throw new Error('שרת הסריקה לא זמין כרגע. נסה שוב בעוד רגע.')
+          }
+        }),
         uploadFileToDrive(file).catch(err => { console.error('Drive upload failed', err); return null }),
       ])
 
