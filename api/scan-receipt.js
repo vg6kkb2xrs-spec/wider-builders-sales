@@ -1,3 +1,11 @@
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '8mb',
+    },
+  },
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -11,6 +19,11 @@ export default async function handler(req, res) {
 
   try {
     const projectList = (projectAddresses || []).slice(0, 30).join(', ')
+
+    const isPdf = (mediaType || '').includes('pdf')
+    const fileBlock = isPdf
+      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: imageBase64 } }
+      : { type: 'image', source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: imageBase64 } }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -26,10 +39,7 @@ export default async function handler(req, res) {
           {
             role: 'user',
             content: [
-              {
-                type: 'image',
-                source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: imageBase64 },
-              },
+              fileBlock,
               {
                 type: 'text',
                 text: `קרא את הקבלה/חשבונית הזו וחלץ את הפרטים הבאים. החזר אך ורק JSON תקין, ללא טקסט נוסף, ללא markdown.
