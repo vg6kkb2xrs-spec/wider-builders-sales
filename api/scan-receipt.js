@@ -49,7 +49,7 @@ export default async function handler(req, res) {
   כללי אצבע: קבלה מחנות חומרי בניין = Material Expense. תשלום לעובד/קבלן משנה = Labor Expense. חשבונית שהתקבלה מספק שטרם שולמה = New Bill. תשלום בפועל על חשבונית = Bill Payment. מקדמה מלקוח = Client Deposit. החזר מספק = Vendor Refund. כל השאר = General Expense.
 - amount: מספר בלבד (ללא סימן מטבע)
 - payment_method: בחר ערך אחד בדיוק מהרשימה הזו אם ברור מהמסמך, אחרת null: "Check", "Zelle", "Company Debit Card 4699", "Material Account 2961", "Tzvi personal", "Israel Amex", "ATM", "Cash", "Paid by contractor", "Paid by Client", "Not paid"
-- memo: תיאור קצר של מה נקנה (בעברית, עד 8 מילים)
+- memo: תיאור קצר של מה נקנה, באנגלית, עד 8 מילים (לדוגמה: "Tile adhesive bags", "Subcontractor payment")
 - vendor: שם הספק/חנות אם מופיע
 - project_guess: אם יש רמז לאיזה פרויקט זה שייך, בחר מהרשימה הזו אם מתאים: [${projectList}], אחרת null
 
@@ -79,4 +79,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message })
   }
 }
+
 
