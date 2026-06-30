@@ -111,10 +111,11 @@ export function saveSheetId(id) {
   localStorage.setItem(SHEET_ID_KEY, id)
 }
 
-export async function appendToSheet(sheetId, row) {
+export async function appendToSheet(sheetId, row, sheetName) {
   const token = await ensureGoogleToken()
+  const range = sheetName ? `'${sheetName}'!A:H` : 'A:H'
   const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A:F:append?valueInputOption=USER_ENTERED`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -127,3 +128,4 @@ export async function appendToSheet(sheetId, row) {
   }
   return res.json()
 }
+
