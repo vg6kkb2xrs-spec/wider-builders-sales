@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import MeetingsView from './MeetingsView'
+import CashflowView from './CashflowView'
 
 const fmt=(n)=>`$${Number(n||0).toLocaleString()}`
 const fmtK=(n)=>{const v=Number(n||0);return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}K`:`$${v}`}
@@ -137,6 +138,7 @@ export default function ManagerDashboard({session}){
 
       {/* MEETINGS TAB */}
       {tab==='meetings'&&<MeetingsView agentId={session.user.id} isManager={true}/>}
+      {tab==='cashflow'&&<CashflowView isManager={true}/>}
 
       {/* LEADS TAB */}
       {tab==='leads'&&<div className="body">
@@ -169,7 +171,11 @@ export default function ManagerDashboard({session}){
         <button className={`nb ${tab==='leads'?'on':''}`} onClick={()=>setTab('leads')}>
           <div className="nb-icon"><i className="ti ti-list" aria-hidden="true"/></div>לידים
         </button>
+        <button className={`nb ${tab==='cashflow'?'on':''}`} onClick={()=>setTab('cashflow')}>
+          <div className="nb-icon"><i className="ti ti-cash" aria-hidden="true"/></div>תזרים
+        </button>
       </nav>
     </div>
   )
 }
+
