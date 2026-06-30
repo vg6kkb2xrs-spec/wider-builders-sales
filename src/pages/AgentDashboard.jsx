@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import AddLeadModal from '../components/AddLeadModal'
 import AddEventModal from '../components/AddEventModal'
 import LeadCard from '../components/LeadCard'
-import MeetingsView from './MeetingsView'
+import CashflowView from './CashflowView'
 import CalendarView from './CalendarView'
 
 const fmtK=(n)=>{const v=Number(n||0);return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}K`:`$${v}`}
@@ -79,7 +79,7 @@ export default function AgentDashboard({session}){
       {/* HOME */}
       {tab==='home'&&<div className="body">
         {todayM.length>0&&(
-          <div className="today-card" onClick={()=>setTab('meetings')}>
+          <div className="today-card" onClick={()=>setTab('calendar')}>
             <div className="tc-hdr"><div className="tc-dot"/><div className="tc-ttl">פגישה היום</div></div>
             {todayM.map(l=>(
               <div key={l.id} className="tc-row">
@@ -117,7 +117,7 @@ export default function AgentDashboard({session}){
       </div>}
 
       {/* MEETINGS */}
-      {tab==='meetings'&&<MeetingsView agentId={session.user.id} isManager={false}/>}
+      {tab==='cashflow'&&<CashflowView isManager={false}/>}
       {tab==='calendar'&&<CalendarView agentId={session.user.id}/>}
 
       {/* ALL LEADS */}
@@ -139,10 +139,8 @@ export default function AgentDashboard({session}){
         <button className={`nb ${tab==='home'?'on':''}`} onClick={()=>setTab('home')}>
           <div className="nb-icon"><i className="ti ti-home" aria-hidden="true"/></div>בית
         </button>
-        <button className={`nb ${tab==='meetings'?'on':''}`} onClick={()=>setTab('meetings')} style={{position:'relative'}}>
-          <div className="nb-icon"><i className="ti ti-users" aria-hidden="true"/></div>
-          {todayM.length>0&&<span className="nb-badge">{todayM.length}</span>}
-          פגישות
+        <button className={`nb ${tab==='cashflow'?'on':''}`} onClick={()=>setTab('cashflow')}>
+          <div className="nb-icon"><i className="ti ti-cash" aria-hidden="true"/></div>תזרים
         </button>
         <button className={`nb ${tab==='calendar'?'on':''}`} onClick={()=>setTab('calendar')}>
           <div className="nb-icon"><i className="ti ti-calendar" aria-hidden="true"/></div>יומן
@@ -157,6 +155,7 @@ export default function AgentDashboard({session}){
     </div>
   )
 }
+
 
 
 
