@@ -125,6 +125,7 @@ export default function AgentDashboard({session}){
 
       {/* MEETINGS */}
       {tab==='meetings'&&<MeetingsView agentId={session.user.id} isManager={false}/>}
+      {tab==='calendar'&&<CalendarView agentId={session.user.id}/>}
 
       {/* ALL LEADS */}
       {tab==='leads'&&<div className="body">
@@ -163,5 +164,6 @@ export default function AgentDashboard({session}){
     </div>
   )
 }
+
 
 
