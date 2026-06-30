@@ -130,7 +130,7 @@ function ReviewModal({ scanned, fileUrl, leads, sheetId, onClose, onSaved }) {
 
         <div className="field">
           <label>פרויקט</label>
-          <select value={form.project_name} onChange={e => setForm(f => ({...f, project_name: e.target.value}))}>
+          <select className="address-select" value={form.project_name} onChange={e => setForm(f => ({...f, project_name: e.target.value}))}>
             <option value="">— ללא פרויקט ספציפי —</option>
             {leads.map(l => (
               <option key={l.id} value={l.project_address}>{l.project_address}</option>
@@ -257,7 +257,7 @@ function EditReceiptModal({ receipt, leads, sheetId, onClose, onSaved, onDeleted
 
         <div className="field">
           <label>פרויקט</label>
-          <select value={form.project_name} onChange={e => setForm(f => ({...f, project_name: e.target.value}))}>
+          <select className="address-select" value={form.project_name} onChange={e => setForm(f => ({...f, project_name: e.target.value}))}>
             <option value="">— ללא פרויקט ספציפי —</option>
             {leads.map(l => (
               <option key={l.id} value={l.project_address}>{l.project_address}</option>
@@ -479,6 +479,7 @@ export default function ReceiptsView({ isManager }) {
     </div>
   )
 }
+
 
 
 
