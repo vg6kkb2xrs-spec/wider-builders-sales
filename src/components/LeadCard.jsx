@@ -178,7 +178,7 @@ function DetailScreen({ lead, onBack, onUpdate, onSchedule }) {
           {/* CTA */}
           {!isFinal && !isFrozen && (
             <button className="cta2" onClick={() => onSchedule(lead)} style={{ marginTop: 10 }}>
-              📅 {lead.visit_datetime ? 'עדכן פגישה' : 'קבע פגישה'}
+              📅 הוסף ליומן (פגישה / תזכורת)
             </button>
           )}
           {isFrozen && <button className="cta" onClick={() => doStage('incoming_call')}>🔥 הפשר ליד</button>}
@@ -320,4 +320,5 @@ export default function LeadCard({ lead, onUpdate, onSchedule }) {
     </div>
   )
 }
+
 
