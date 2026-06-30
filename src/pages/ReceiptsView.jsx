@@ -20,17 +20,25 @@ function fileToBase64(file) {
 function SheetSetupModal({ onClose, onSaved }) {
   const [url, setUrl] = useState('')
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const extractId = (input) => {
     const match = input.match(/\/d\/([a-zA-Z0-9-_]+)/)
     return match ? match[1] : input.trim()
   }
 
-  const save = () => {
+  const save = async () => {
     const id = extractId(url)
     if (!id) return setError('הדבק קישור תקין לגיליון')
-    saveSheetId(id)
-    onSaved()
+    setSaving(true)
+    try {
+      await saveSheetId(id)
+      onSaved()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -45,13 +53,13 @@ function SheetSetupModal({ onClose, onSaved }) {
           <input placeholder="https://docs.google.com/spreadsheets/d/..." value={url} onChange={e => setUrl(e.target.value)} autoFocus />
         </div>
         {error && <div className="field-error">{error}</div>}
-        <button className="submit-btn" onClick={save}>חבר גיליון</button>
+        <button className="submit-btn" onClick={save} disabled={saving}>{saving ? 'מחבר...' : 'חבר גיליון'}</button>
       </div>
     </div>
   )
 }
 
-function ReviewModal({ scanned, fileUrl, leads, onClose, onSaved }) {
+function ReviewModal({ scanned, fileUrl, leads, sheetId, onClose, onSaved }) {
   const [form, setForm] = useState({
     project_name: scanned.project_guess || '',
     transaction_type: scanned.transaction_type || 'General Expense',
@@ -62,7 +70,7 @@ function ReviewModal({ scanned, fileUrl, leads, onClose, onSaved }) {
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [syncSheet, setSyncSheet] = useState(!!getSavedSheetId())
+  const [syncSheet, setSyncSheet] = useState(!!sheetId)
 
   const save = async () => {
     if (!form.amount || Number(form.amount) <= 0) return setError('הכנס סכום')
@@ -81,7 +89,6 @@ function ReviewModal({ scanned, fileUrl, leads, onClose, onSaved }) {
         file_url: fileUrl,
       })
 
-      const sheetId = getSavedSheetId()
       if (syncSheet && sheetId) {
         try {
           await appendToSheet(sheetId, [
@@ -159,7 +166,7 @@ function ReviewModal({ scanned, fileUrl, leads, onClose, onSaved }) {
           <input value={form.memo} onChange={e => setForm(f => ({...f, memo: e.target.value}))} />
         </div>
 
-        {getSavedSheetId() && (
+        {sheetId && (
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
             <input type="checkbox" id="syncSheet" checked={syncSheet} onChange={e => setSyncSheet(e.target.checked)} style={{ width:18, height:18 }} />
             <label htmlFor="syncSheet" style={{ fontSize:13, color:'#1a1a1a' }}>סנכרן גם לגיליון Google Sheets</label>
@@ -180,15 +187,18 @@ export default function ReceiptsView({ isManager }) {
   const [scanError, setScanError] = useState('')
   const [reviewData, setReviewData] = useState(null)
   const [showSheetSetup, setShowSheetSetup] = useState(false)
+  const [sheetId, setSheetId] = useState(null)
   const fileInputRef = useRef(null)
 
   const load = async () => {
-    const [r, l] = await Promise.all([
+    const [r, l, sid] = await Promise.all([
       getReceipts(),
       supabase.from('leads').select('id, project_address').order('updated_at', { ascending: false }),
+      getSavedSheetId(),
     ])
     setReceipts(r)
     setLeads(l.data || [])
+    setSheetId(sid)
   }
   useEffect(() => { load() }, [])
 
@@ -245,12 +255,13 @@ export default function ReceiptsView({ isManager }) {
           scanned={reviewData.scanned}
           fileUrl={reviewData.fileUrl}
           leads={leads}
+          sheetId={sheetId}
           onClose={() => setReviewData(null)}
           onSaved={() => { setReviewData(null); load() }}
         />
       )}
       {showSheetSetup && (
-        <SheetSetupModal onClose={() => setShowSheetSetup(false)} onSaved={() => { setShowSheetSetup(false) }} />
+        <SheetSetupModal onClose={() => setShowSheetSetup(false)} onSaved={() => { setShowSheetSetup(false); load() }} />
       )}
 
       <div style={{ margin:'10px 12px', background:'#1D9E75', borderRadius:16, padding:'16px', color:'#fff' }}>
@@ -290,7 +301,7 @@ export default function ReceiptsView({ isManager }) {
         <div style={{ margin:'0 12px 10px', textAlign:'center' }}>
           <button onClick={() => setShowSheetSetup(true)}
             style={{ fontSize:12, color:'#8E8E93', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>
-            {getSavedSheetId() ? '✓ מחובר לגיליון Google Sheets — שנה' : 'חבר גיליון Google Sheets'}
+            {sheetId ? '✓ מחובר לגיליון Google Sheets — שנה' : 'חבר גיליון Google Sheets'}
           </button>
         </div>
       )}
