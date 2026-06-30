@@ -269,13 +269,13 @@ export default function CashflowView({ isManager }) {
           <div style={{ background:'rgba(255,255,255,.12)', borderRadius:10, padding:'8px 10px' }}>
             <div style={{ fontSize:10, opacity:.75 }}>צפי לסוף השבוע</div>
             <div style={{ fontSize:15, fontWeight:700, marginTop:1, color: weekProjection < 0 ? '#FFB3B3' : '#fff' }}>
-              {fmtK(weekProjection)}
+              {fmt(weekProjection)}
             </div>
           </div>
           <div style={{ background:'rgba(255,255,255,.12)', borderRadius:10, padding:'8px 10px' }}>
             <div style={{ fontSize:10, opacity:.75 }}>צפי לסוף החודש</div>
             <div style={{ fontSize:15, fontWeight:700, marginTop:1, color: monthProjection < 0 ? '#FFB3B3' : '#fff' }}>
-              {fmtK(monthProjection)}
+              {fmt(monthProjection)}
             </div>
           </div>
         </div>
