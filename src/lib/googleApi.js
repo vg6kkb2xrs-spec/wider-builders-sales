@@ -31,14 +31,26 @@ export function getStoredToken() {
 export async function requestGoogleAccess() {
   await loadGis()
   return new Promise((resolve, reject) => {
+    // Safety timeout: mobile browsers sometimes silently block the OAuth popup
+    // (especially when not triggered close enough to a user tap). Without this,
+    // the upload flow would hang forever with no feedback.
+    const timeout = setTimeout(() => {
+      reject(new Error('חיבור Google נתקע. ייתכן שהדפדפן חסם את חלון ההתחברות - בדוק הגדרות popup ונסה שוב.'))
+    }, 20000)
+
     tokenClient = window.google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
       callback: (resp) => {
-        if (resp.error) return reject(resp)
+        clearTimeout(timeout)
+        if (resp.error) return reject(new Error(resp.error_description || resp.error))
         sessionStorage.setItem(TOKEN_KEY, resp.access_token)
         sessionStorage.setItem(TOKEN_EXPIRY_KEY, String(Date.now() + (resp.expires_in - 60) * 1000))
         resolve(resp.access_token)
+      },
+      error_callback: (err) => {
+        clearTimeout(timeout)
+        reject(new Error(err?.message || 'חלון ההתחברות ל-Google נחסם או בוטל'))
       },
     })
     tokenClient.requestAccessToken()
@@ -195,6 +207,7 @@ export async function updateSheetRow(sheetId, rowNumber, row, sheetName) {
   }
   return res.json()
 }
+
 
 
 
