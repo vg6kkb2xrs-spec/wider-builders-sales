@@ -184,3 +184,37 @@ export async function deleteTask(id) {
   await supabase.from('tasks').delete().eq('id', id)
 }
 
+
+
+// ===== CASH FLOW =====
+export async function getBankBalance() {
+  const { data } = await supabase
+    .from('bank_balance')
+    .select('*')
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .single()
+  return data
+}
+
+export async function setBankBalance(amount) {
+  const { data: { user } } = await supabase.auth.getUser()
+  await supabase.from('bank_balance').insert({ amount, updated_by: user.id })
+}
+
+export async function getCashflowEntries() {
+  const { data } = await supabase
+    .from('cashflow_entries')
+    .select('*')
+    .order('entry_date', { ascending: true })
+  return data || []
+}
+
+export async function addCashflowEntry(entry) {
+  const { data: { user } } = await supabase.auth.getUser()
+  await supabase.from('cashflow_entries').insert({ ...entry, created_by: user.id })
+}
+
+export async function deleteCashflowEntry(id) {
+  await supabase.from('cashflow_entries').delete().eq('id', id)
+}
