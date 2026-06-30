@@ -247,3 +247,8 @@ export async function addReceipt(receipt) {
 export async function deleteReceipt(id) {
   await supabase.from('receipts').delete().eq('id', id)
 }
+
+export async function updateReceipt(id, receipt) {
+  await supabase.from('receipts').update(receipt).eq('id', id)
+}
+
