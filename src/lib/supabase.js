@@ -218,3 +218,8 @@ export async function addCashflowEntry(entry) {
 export async function deleteCashflowEntry(id) {
   await supabase.from('cashflow_entries').delete().eq('id', id)
 }
+
+export async function updateCashflowEntry(id, entry) {
+  await supabase.from('cashflow_entries').update(entry).eq('id', id)
+}
+
