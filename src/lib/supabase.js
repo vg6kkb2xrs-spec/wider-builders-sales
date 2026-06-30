@@ -158,3 +158,28 @@ export async function getLogs(leadId) {
     .order('created_at', { ascending: false })
   return data || []
 }
+
+
+// ===== TASKS =====
+export async function getTasks() {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('agent_id', user.id)
+    .order('due_datetime', { ascending: true })
+  return data || []
+}
+
+export async function addTask(title, due_datetime) {
+  const { data: { user } } = await supabase.auth.getUser()
+  await supabase.from('tasks').insert({ title, due_datetime, agent_id: user.id })
+}
+
+export async function toggleTask(id, done) {
+  await supabase.from('tasks').update({ done }).eq('id', id)
+}
+
+export async function deleteTask(id) {
+  await supabase.from('tasks').delete().eq('id', id)
+}
