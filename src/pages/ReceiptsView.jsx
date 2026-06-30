@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { getReceipts, addReceipt, deleteReceipt } from '../lib/supabase'
+import { getReceipts, addReceipt, updateReceipt, deleteReceipt } from '../lib/supabase'
 import { uploadFileToDrive, appendToSheet, getSavedSheetId, saveSheetId } from '../lib/googleApi'
 
 const fmt = (n) => `$${Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2})}`
@@ -172,6 +172,123 @@ function ReviewModal({ scanned, fileUrl, leads, sheetId, onClose, onSaved }) {
   )
 }
 
+function EditReceiptModal({ receipt, leads, onClose, onSaved, onDeleted }) {
+  const [form, setForm] = useState({
+    project_name: receipt.project_name || '',
+    transaction_type: receipt.transaction_type || 'General Expense',
+    amount: receipt.amount || '',
+    billable: receipt.billable || false,
+    payment_method: receipt.payment_method || '',
+    memo: receipt.memo || '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState('')
+
+  const save = async () => {
+    if (!form.amount || Number(form.amount) <= 0) return setError('הכנס סכום')
+    if (!form.transaction_type) return setError('בחר סוג עסקה')
+    setSaving(true)
+    try {
+      await updateReceipt(receipt.id, {
+        project_name: form.project_name || null,
+        transaction_type: form.transaction_type,
+        amount: Number(form.amount),
+        billable: form.billable,
+        payment_method: form.payment_method || null,
+        memo: form.memo || null,
+      })
+      onSaved()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const remove = async () => {
+    if (!confirm('למחוק את הקבלה? פעולה זו אינה הפיכה.')) return
+    setDeleting(true)
+    try {
+      await deleteReceipt(receipt.id)
+      onDeleted()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} dir="rtl">
+        <div className="modal-head">
+          <h2>ערוך קבלה</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        {receipt.file_url && (
+          <a href={receipt.file_url} target="_blank" rel="noopener noreferrer"
+            style={{ display:'block', fontSize:13, color:'#185FA5', marginBottom:14, textDecoration:'underline' }}>
+            📄 צפה בקובץ המקורי
+          </a>
+        )}
+
+        <div className="field">
+          <label>פרויקט</label>
+          <select value={form.project_name} onChange={e => setForm(f => ({...f, project_name: e.target.value}))}>
+            <option value="">— ללא פרויקט ספציפי —</option>
+            {leads.map(l => (
+              <option key={l.id} value={l.project_address}>{l.project_address}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="field">
+          <label>סוג עסקה</label>
+          <select value={form.transaction_type} onChange={e => setForm(f => ({...f, transaction_type: e.target.value}))}>
+            {TRANSACTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+
+        <div className="field">
+          <label>סכום ($)</label>
+          <input type="number" value={form.amount} onChange={e => setForm(f => ({...f, amount: e.target.value}))} />
+        </div>
+
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+          <input type="checkbox" id="edit_billable" checked={form.billable} onChange={e => setForm(f => ({...f, billable: e.target.checked}))} style={{ width:18, height:18 }} />
+          <label htmlFor="edit_billable" style={{ fontSize:13, color:'#1a1a1a' }}>Billable (ניתן לחיוב הלקוח)</label>
+        </div>
+
+        <div className="field">
+          <label>אופן תשלום</label>
+          <select value={form.payment_method} onChange={e => setForm(f => ({...f, payment_method: e.target.value}))}>
+            <option value="">— לא ידוע —</option>
+            {PAYMENT_METHODS.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+
+        <div className="field">
+          <label>הערה</label>
+          <input value={form.memo} onChange={e => setForm(f => ({...f, memo: e.target.value}))} />
+        </div>
+
+        {error && <div className="field-error">{error}</div>}
+        <button className="submit-btn" onClick={save} disabled={saving}>{saving ? 'שומר...' : 'שמור שינויים'}</button>
+        <button onClick={remove} disabled={deleting}
+          style={{ width:'100%', marginTop:8, padding:12, background:'#FFF5F5', color:'#E24B4A', border:'1px solid #F7C1C1', borderRadius:12, fontSize:14, fontWeight:600, cursor:'pointer' }}>
+          {deleting ? 'מוחק...' : 'מחק קבלה'}
+        </button>
+
+        <div style={{ fontSize:11, color:'#B0B0B0', marginTop:10, textAlign:'center' }}>
+          שינויים כאן לא יתעדכנו אוטומטית בגיליון Google Sheets
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ReceiptsView({ isManager }) {
   const [receipts, setReceipts] = useState([])
   const [leads, setLeads] = useState([])
@@ -180,6 +297,7 @@ export default function ReceiptsView({ isManager }) {
   const [reviewData, setReviewData] = useState(null)
   const [showSheetSetup, setShowSheetSetup] = useState(false)
   const [sheetId, setSheetId] = useState(null)
+  const [editingReceipt, setEditingReceipt] = useState(null)
   const fileInputRef = useRef(null)
 
   const load = async () => {
@@ -255,6 +373,15 @@ export default function ReceiptsView({ isManager }) {
       {showSheetSetup && (
         <SheetSetupModal onClose={() => setShowSheetSetup(false)} onSaved={() => { setShowSheetSetup(false); load() }} />
       )}
+      {editingReceipt && (
+        <EditReceiptModal
+          receipt={editingReceipt}
+          leads={leads}
+          onClose={() => setEditingReceipt(null)}
+          onSaved={() => { setEditingReceipt(null); load() }}
+          onDeleted={() => { setEditingReceipt(null); load() }}
+        />
+      )}
 
       <div style={{ margin:'10px 12px', background:'#1D9E75', borderRadius:16, padding:'16px', color:'#fff' }}>
         <div style={{ fontSize:11, opacity:.75 }}>קבלות וחשבוניות</div>
@@ -299,7 +426,8 @@ export default function ReceiptsView({ isManager }) {
       <div className="sec-hdr">קבלות אחרונות</div>
       {receipts.length === 0 && <div className="empty"><div className="empty-sub">עדיין לא הועלו קבלות</div></div>}
       {receipts.map(r => (
-        <div key={r.id} style={{ background:'#fff', margin:'0 12px 6px', borderRadius:14, padding:'11px 13px', display:'flex', alignItems:'center', gap:10 }}>
+        <div key={r.id} onClick={() => setEditingReceipt(r)}
+          style={{ background:'#fff', margin:'0 12px 6px', borderRadius:14, padding:'11px 13px', display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
           <div style={{ width:3, borderRadius:2, alignSelf:'stretch', background: (r.transaction_type==='Client Deposit'||r.transaction_type==='Vendor Refund') ? '#1D9E75' : '#E24B4A' }}/>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{r.memo || r.transaction_type}</div>
@@ -322,5 +450,6 @@ export default function ReceiptsView({ isManager }) {
     </div>
   )
 }
+
 
 
