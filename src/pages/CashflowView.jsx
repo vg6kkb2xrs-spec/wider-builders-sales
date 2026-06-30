@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getBankBalance, setBankBalance, getCashflowEntries, addCashflowEntry, deleteCashflowEntry } from '../lib/supabase'
+import { getBankBalance, setBankBalance, getCashflowEntries, addCashflowEntry, deleteCashflowEntry, updateCashflowEntry } from '../lib/supabase'
 
 const fmtK = (n) => {
   const v = Number(n||0)
@@ -64,15 +64,16 @@ function EditBalanceModal({ current, onClose, onSaved }) {
   )
 }
 
-function AddEntryModal({ onClose, onSaved }) {
-  const [type, setType] = useState('expense')
-  const [category, setCategory] = useState('one_time')
-  const [description, setDescription] = useState('')
-  const [amount, setAmount] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().slice(0,10))
-  const [recurring, setRecurring] = useState(false)
-  const [frequency, setFrequency] = useState('monthly')
+function AddEntryModal({ existing, onClose, onSaved, onDelete }) {
+  const [type, setType] = useState(existing?.type || 'expense')
+  const [category, setCategory] = useState(existing?.category || 'one_time')
+  const [description, setDescription] = useState(existing?.description || '')
+  const [amount, setAmount] = useState(existing?.amount ?? '')
+  const [date, setDate] = useState(existing?.entry_date || new Date().toISOString().slice(0,10))
+  const [recurring, setRecurring] = useState(existing?.is_recurring || false)
+  const [frequency, setFrequency] = useState(existing?.recurrence_frequency || 'monthly')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
 
   const save = async () => {
@@ -80,22 +81,34 @@ function AddEntryModal({ onClose, onSaved }) {
     if (!amount || Number(amount) <= 0) return setError('הכנס סכום')
     setSaving(true)
     try {
-      await addCashflowEntry({
+      const payload = {
         type, category, description: description.trim(),
         amount: Number(amount), entry_date: date,
         is_recurring: category === 'fixed' && recurring,
         recurrence_frequency: (category === 'fixed' && recurring) ? frequency : null,
-      })
+      }
+      if (existing) await updateCashflowEntry(existing.id, payload)
+      else await addCashflowEntry(payload)
       onSaved()
     } catch(e) { setError(e.message) }
     finally { setSaving(false) }
+  }
+
+  const remove = async () => {
+    if (!confirm('למחוק את הרשומה?')) return
+    setDeleting(true)
+    try {
+      await deleteCashflowEntry(existing.id)
+      onDelete()
+    } catch(e) { setError(e.message) }
+    finally { setDeleting(false) }
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} dir="rtl">
         <div className="modal-head">
-          <h2>הוסף תזרים</h2>
+          <h2>{existing ? 'ערוך תזרים' : 'הוסף תזרים'}</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -157,7 +170,13 @@ function AddEntryModal({ onClose, onSaved }) {
         )}
 
         {error && <div className="field-error">{error}</div>}
-        <button className="submit-btn" onClick={save} disabled={saving}>{saving ? 'שומר...' : 'הוסף'}</button>
+        <button className="submit-btn" onClick={save} disabled={saving}>{saving ? 'שומר...' : existing ? 'שמור שינויים' : 'הוסף'}</button>
+        {existing && (
+          <button onClick={remove} disabled={deleting}
+            style={{ width:'100%', marginTop:8, padding:12, background:'#FFF5F5', color:'#E24B4A', border:'1px solid #F7C1C1', borderRadius:12, fontSize:14, fontWeight:600, cursor:'pointer' }}>
+            {deleting ? 'מוחק...' : 'מחק רשומה'}
+          </button>
+        )}
       </div>
     </div>
   )
@@ -169,6 +188,7 @@ export default function CashflowView({ isManager }) {
   const [view, setView] = useState('week')
   const [showEditBalance, setShowEditBalance] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
+  const [editingEntry, setEditingEntry] = useState(null)
 
   const load = async () => {
     const [b, e] = await Promise.all([getBankBalance(), getCashflowEntries()])
@@ -211,8 +231,13 @@ export default function CashflowView({ isManager }) {
       {showEditBalance && (
         <EditBalanceModal current={currentBalance} onClose={() => setShowEditBalance(false)} onSaved={() => { setShowEditBalance(false); load() }} />
       )}
-      {showAdd && (
-        <AddEntryModal onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />
+      {(showAdd || editingEntry) && (
+        <AddEntryModal
+          existing={editingEntry}
+          onClose={() => { setShowAdd(false); setEditingEntry(null) }}
+          onSaved={() => { setShowAdd(false); setEditingEntry(null); load() }}
+          onDelete={() => { setEditingEntry(null); load() }}
+        />
       )}
 
       {/* Balance card */}
@@ -272,7 +297,8 @@ export default function CashflowView({ isManager }) {
         <div key={key}>
           <div className="sec-hdr">{key === 'today' ? 'היום' : key}</div>
           {items.map((item, i) => (
-            <div key={item.id+i} style={{ background:'#fff', margin:'0 12px 6px', borderRadius:14, padding:'11px 13px', display:'flex', alignItems:'center', gap:10 }}>
+            <div key={item.id+i} onClick={() => isManager && setEditingEntry(item)}
+              style={{ background:'#fff', margin:'0 12px 6px', borderRadius:14, padding:'11px 13px', display:'flex', alignItems:'center', gap:10, cursor: isManager ? 'pointer' : 'default' }}>
               <div style={{ width:3, borderRadius:2, alignSelf:'stretch', background: item.type==='income' ? '#1D9E75' : '#E24B4A' }}/>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{item.description}</div>
@@ -301,3 +327,4 @@ export default function CashflowView({ isManager }) {
     </div>
   )
 }
+
