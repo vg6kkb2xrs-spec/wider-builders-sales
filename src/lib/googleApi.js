@@ -127,11 +127,32 @@ export async function saveSheetId(id) {
 
 export async function appendToSheet(sheetId, row, sheetName) {
   const token = await ensureGoogleToken()
-  const range = sheetName ? `'${sheetName}'!A:H` : 'A:H'
+
+  // Determine the actual first sheet name if not provided, and find the true last row
+  // by reading column C (which is reliably populated, unlike A/B which may be empty)
+  // to avoid Google's append heuristic misjudging the table boundary.
+  let tabName = sheetName
+  if (!tabName) {
+    const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties.title`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const meta = await metaRes.json()
+    tabName = meta.sheets?.[0]?.properties?.title || 'Sheet1'
+  }
+
+  const readRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(`'${tabName}'!C:C`)}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+  const readData = await readRes.json()
+  const lastRow = (readData.values?.length || 0)
+  const nextRow = lastRow + 1 // next empty row (1-indexed)
+
+  const range = `'${tabName}'!A${nextRow}:H${nextRow}`
   const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
     {
-      method: 'POST',
+      method: 'PUT',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: [row] }),
     }
@@ -142,4 +163,5 @@ export async function appendToSheet(sheetId, row, sheetName) {
   }
   return res.json()
 }
+
 
