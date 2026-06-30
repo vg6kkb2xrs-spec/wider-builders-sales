@@ -165,7 +165,7 @@ export async function getTasks() {
   const { data: { user } } = await supabase.auth.getUser()
   const { data } = await supabase
     .from('tasks')
-    .select('*')
+    .select('*, leads(project_address, client_name)')
     .eq('agent_id', user.id)
     .order('due_datetime', { ascending: true })
   return data || []
@@ -183,3 +183,4 @@ export async function toggleTask(id, done) {
 export async function deleteTask(id) {
   await supabase.from('tasks').delete().eq('id', id)
 }
+
