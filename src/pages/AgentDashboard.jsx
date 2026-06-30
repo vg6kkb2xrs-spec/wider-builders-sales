@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { getMyLeads, getMyPerformance } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
 import AddLeadModal from '../components/AddLeadModal'
-import ScheduleVisitModal from '../components/ScheduleVisitModal'
+import AddEventModal from '../components/AddEventModal'
 import LeadCard from '../components/LeadCard'
 import MeetingsView from './MeetingsView'
 import CalendarView from './CalendarView'
@@ -153,10 +153,11 @@ export default function AgentDashboard({session}){
       </nav>
 
       {showAdd&&<AddLeadModal onClose={()=>setShowAdd(false)} onSaved={()=>{setShowAdd(false);load()}}/>}
-      {schedLead&&<ScheduleVisitModal lead={schedLead} onClose={()=>setSchedLead(null)} onSaved={()=>{setSchedLead(null);load()}}/>}
+      {schedLead&&<AddEventModal agentId={session.user.id} defaultLeadId={schedLead.id} onClose={()=>setSchedLead(null)} onSaved={()=>{setSchedLead(null);load()}}/>}
     </div>
   )
 }
+
 
 
 
