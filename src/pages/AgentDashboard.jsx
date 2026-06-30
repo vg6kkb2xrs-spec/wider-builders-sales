@@ -24,6 +24,8 @@ export default function AgentDashboard({session}){
   const [search,setSearch]=useState('')
   const [showAdd,setShowAdd]=useState(false)
   const [schedLead,setSchedLead]=useState(null)
+  const [showQuickEvent,setShowQuickEvent]=useState(false)
+  const [triggerReceiptUpload,setTriggerReceiptUpload]=useState(0)
 
   const load=async()=>{
     const {data:{user}}=await supabase.auth.getUser()
@@ -78,6 +80,25 @@ export default function AgentDashboard({session}){
         </>}
       </div>
 
+      {/* QUICK ACTIONS */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, margin:'10px 12px 0' }}>
+        <button onClick={()=>{setTab('cashflow');setFinanceView('receipts');setTriggerReceiptUpload(n=>n+1)}}
+          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'12px 6px', background:'#fff', border:'1.5px solid #E5E5EA', borderRadius:14, cursor:'pointer' }}>
+          <i className="ti ti-receipt" style={{ fontSize:22, color:'#1D9E75' }} aria-hidden="true"/>
+          <span style={{ fontSize:11, fontWeight:600, color:'#1a1a1a' }}>הוסף קבלה</span>
+        </button>
+        <button onClick={()=>setShowQuickEvent(true)}
+          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'12px 6px', background:'#fff', border:'1.5px solid #E5E5EA', borderRadius:14, cursor:'pointer' }}>
+          <i className="ti ti-calendar-plus" style={{ fontSize:22, color:'#185FA5' }} aria-hidden="true"/>
+          <span style={{ fontSize:11, fontWeight:600, color:'#1a1a1a' }}>הוסף פגישה</span>
+        </button>
+        <button onClick={()=>setShowAdd(true)}
+          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'12px 6px', background:'#fff', border:'1.5px solid #E5E5EA', borderRadius:14, cursor:'pointer' }}>
+          <i className="ti ti-phone-incoming" style={{ fontSize:22, color:'#E24B4A' }} aria-hidden="true"/>
+          <span style={{ fontSize:11, fontWeight:600, color:'#1a1a1a' }}>הוסף ליד</span>
+        </button>
+      </div>
+
       {/* HOME */}
       {tab==='home'&&<div className="body">
         {todayM.length>0&&(
@@ -110,12 +131,6 @@ export default function AgentDashboard({session}){
             <button className="add-btn" style={{maxWidth:220,margin:'0 auto'}} onClick={()=>setShowAdd(true)}>+ שיחה נכנסת חדשה</button>
           </div>
         )}
-        {leads.length>0&&(
-          <button className="add-btn" onClick={()=>setShowAdd(true)}>
-            <i className="ti ti-phone-incoming" style={{fontSize:16}} aria-hidden="true"/>
-            שיחה נכנסת חדשה
-          </button>
-        )}
       </div>}
 
       {/* MEETINGS */}
@@ -133,7 +148,7 @@ export default function AgentDashboard({session}){
               📄 קבלות
             </button>
           </div>
-          {financeView==='cashflow' ? <CashflowView isManager={false}/> : <ReceiptsView isManager={false}/>}
+          {financeView==='cashflow' ? <CashflowView isManager={false}/> : <ReceiptsView isManager={false} autoTriggerUpload={triggerReceiptUpload}/>}
         </>
       )}
       {tab==='calendar'&&<CalendarView agentId={session.user.id}/>}
@@ -170,9 +185,11 @@ export default function AgentDashboard({session}){
 
       {showAdd&&<AddLeadModal onClose={()=>setShowAdd(false)} onSaved={()=>{setShowAdd(false);load()}}/>}
       {schedLead&&<AddEventModal agentId={session.user.id} defaultLeadId={schedLead.id} onClose={()=>setSchedLead(null)} onSaved={()=>{setSchedLead(null);load()}}/>}
+      {showQuickEvent&&<AddEventModal agentId={session.user.id} onClose={()=>setShowQuickEvent(false)} onSaved={()=>{setShowQuickEvent(false);load()}}/>}
     </div>
   )
 }
+
 
 
 
