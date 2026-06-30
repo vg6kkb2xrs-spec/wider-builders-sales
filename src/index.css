@@ -148,6 +148,8 @@ body{
 .field{margin-bottom:12px}
 .field label{display:block;font-size:11px;color:#8E8E93;font-weight:600;margin-bottom:5px;letter-spacing:.2px}
 .field input,.field textarea,.field select{width:100%;padding:11px 13px;border-radius:10px;border:.5px solid #E5E5EA;background:#F2F2F7;color:#1a1a1a;font-size:14px;font-family:inherit}
+.field select.address-select{direction:ltr;text-align:left}
+.field select.address-select option{direction:ltr;text-align:left;unicode-bidi:plaintext}
 .field textarea{resize:vertical}
 .field-error{color:#E24B4A;font-size:12px;margin-bottom:10px}
 .submit-btn{display:block;width:100%;padding:14px;background:#1D9E75;color:#fff;border:none;border-radius:13px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit}
@@ -172,4 +174,5 @@ body{
 .meeting-badge{background:#E8F5EF;color:#1D9E75}
 .task-check{width:18px;height:18px;border-radius:50%;border:1.5px solid #D0D0D0;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px}
 .task-check.done{background:#185FA5;border-color:#185FA5}
+
 
