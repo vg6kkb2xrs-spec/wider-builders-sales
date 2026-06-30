@@ -45,15 +45,16 @@ export default async function handler(req, res) {
                 text: `קרא את הקבלה/חשבונית הזו וחלץ את הפרטים הבאים. החזר אך ורק JSON תקין, ללא טקסט נוסף, ללא markdown.
 
 שדות נדרשים:
-- transaction_type: "expense" או "income" (כמעט תמיד expense עבור קבלה)
+- transaction_type: בחר ערך אחד בדיוק מהרשימה הזו (באנגלית, בדיוק כפי שכתוב): "Client Deposit", "New Bill", "Bill Payment", "Material Expense", "Labor Expense", "Vendor Refund", "General Expense"
+  כללי אצבע: קבלה מחנות חומרי בניין = Material Expense. תשלום לעובד/קבלן משנה = Labor Expense. חשבונית שהתקבלה מספק שטרם שולמה = New Bill. תשלום בפועל על חשבונית = Bill Payment. מקדמה מלקוח = Client Deposit. החזר מספק = Vendor Refund. כל השאר = General Expense.
 - amount: מספר בלבד (ללא סימן מטבע)
-- payment_method: "מזומן" / "כרטיס אשראי" / "צ'ק" / "העברה בנקאית" / null אם לא ברור
+- payment_method: בחר ערך אחד בדיוק מהרשימה הזו אם ברור מהמסמך, אחרת null: "Check", "Zelle", "Company Debit Card 4699", "Material Account 2961", "Tzvi personal", "Israel Amex", "ATM", "Cash", "Paid by contractor", "Paid by Client", "Not paid"
 - memo: תיאור קצר של מה נקנה (בעברית, עד 8 מילים)
 - vendor: שם הספק/חנות אם מופיע
 - project_guess: אם יש רמז לאיזה פרויקט זה שייך, בחר מהרשימה הזו אם מתאים: [${projectList}], אחרת null
 
 דוגמת פלט:
-{"transaction_type":"expense","amount":1240.50,"payment_method":"כרטיס אשראי","memo":"חומרי בניין חיפוי","vendor":"Home Depot","project_guess":null}`,
+{"transaction_type":"Material Expense","amount":1240.50,"payment_method":"Company Debit Card 4699","memo":"חומרי בניין חיפוי","vendor":"Home Depot","project_guess":null}`,
               },
             ],
           },
@@ -78,3 +79,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message })
   }
 }
+
