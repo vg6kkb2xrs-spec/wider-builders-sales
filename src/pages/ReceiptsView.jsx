@@ -1,9 +1,12 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { getReceipts, addReceipt, deleteReceipt } from '../lib/supabase'
-import { uploadFileToDrive, appendToSheet, getSavedSheetId, saveSheetId, ensureGoogleToken } from '../lib/googleApi'
+import { uploadFileToDrive, appendToSheet, getSavedSheetId, saveSheetId } from '../lib/googleApi'
 
 const fmt = (n) => `$${Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2})}`
+
+const TRANSACTION_TYPES = ['Client Deposit','New Bill','Bill Payment','Material Expense','Labor Expense','Vendor Refund','General Expense']
+const PAYMENT_METHODS = ['Check','Zelle','Company Debit Card 4699','Material Account 2961','Tzvi personal','Israel Amex','ATM','Cash','Paid by contractor','Paid by Client','Not paid']
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -51,8 +54,9 @@ function SheetSetupModal({ onClose, onSaved }) {
 function ReviewModal({ scanned, fileUrl, leads, onClose, onSaved }) {
   const [form, setForm] = useState({
     project_name: scanned.project_guess || '',
-    transaction_type: scanned.transaction_type || 'expense',
+    transaction_type: scanned.transaction_type || 'General Expense',
     amount: scanned.amount || '',
+    billable: false,
     payment_method: scanned.payment_method || '',
     memo: scanned.memo || '',
   })
@@ -62,12 +66,15 @@ function ReviewModal({ scanned, fileUrl, leads, onClose, onSaved }) {
 
   const save = async () => {
     if (!form.amount || Number(form.amount) <= 0) return setError('הכנס סכום')
+    if (!form.transaction_type) return setError('בחר סוג עסקה')
     setSaving(true)
     try {
+      const timestamp = new Date().toISOString()
       const receipt = await addReceipt({
         project_name: form.project_name || null,
         transaction_type: form.transaction_type,
         amount: Number(form.amount),
+        billable: form.billable,
         payment_method: form.payment_method || null,
         memo: form.memo || null,
         file_url: fileUrl,
@@ -77,16 +84,17 @@ function ReviewModal({ scanned, fileUrl, leads, onClose, onSaved }) {
       if (syncSheet && sheetId) {
         try {
           await appendToSheet(sheetId, [
+            timestamp,
             form.project_name || '',
-            form.transaction_type === 'expense' ? 'הוצאה' : 'הכנסה',
+            form.transaction_type,
             form.amount,
+            form.billable ? 'Billable' : '',
             form.payment_method || '',
             form.memo || '',
             fileUrl || '',
           ])
         } catch (sheetErr) {
           console.error('Sheet sync failed:', sheetErr)
-          // don't block save on sheet failure
         }
       }
 
@@ -120,19 +128,11 @@ function ReviewModal({ scanned, fileUrl, leads, onClose, onSaved }) {
           </select>
         </div>
 
-        <div style={{ display:'flex', gap:8, marginBottom:14 }}>
-          <button onClick={() => setForm(f => ({...f, transaction_type:'expense'}))}
-            style={{ flex:1, padding:10, borderRadius:12, border: form.transaction_type==='expense' ? '1.5px solid #E24B4A' : '1.5px solid #E5E5EA',
-              background: form.transaction_type==='expense' ? '#FFF5F5' : '#fff', color: form.transaction_type==='expense' ? '#E24B4A' : '#8E8E93',
-              fontSize:13, fontWeight:600, cursor:'pointer' }}>
-            הוצאה
-          </button>
-          <button onClick={() => setForm(f => ({...f, transaction_type:'income'}))}
-            style={{ flex:1, padding:10, borderRadius:12, border: form.transaction_type==='income' ? '1.5px solid #1D9E75' : '1.5px solid #E5E5EA',
-              background: form.transaction_type==='income' ? '#E8F5EF' : '#fff', color: form.transaction_type==='income' ? '#1D9E75' : '#8E8E93',
-              fontSize:13, fontWeight:600, cursor:'pointer' }}>
-            הכנסה
-          </button>
+        <div className="field">
+          <label>סוג עסקה</label>
+          <select value={form.transaction_type} onChange={e => setForm(f => ({...f, transaction_type: e.target.value}))}>
+            {TRANSACTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
         </div>
 
         <div className="field">
@@ -140,14 +140,16 @@ function ReviewModal({ scanned, fileUrl, leads, onClose, onSaved }) {
           <input type="number" value={form.amount} onChange={e => setForm(f => ({...f, amount: e.target.value}))} />
         </div>
 
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+          <input type="checkbox" id="billable" checked={form.billable} onChange={e => setForm(f => ({...f, billable: e.target.checked}))} style={{ width:18, height:18 }} />
+          <label htmlFor="billable" style={{ fontSize:13, color:'#1a1a1a' }}>Billable (ניתן לחיוב הלקוח)</label>
+        </div>
+
         <div className="field">
           <label>אופן תשלום</label>
           <select value={form.payment_method} onChange={e => setForm(f => ({...f, payment_method: e.target.value}))}>
             <option value="">— לא ידוע —</option>
-            <option value="מזומן">מזומן</option>
-            <option value="כרטיס אשראי">כרטיס אשראי</option>
-            <option value="צ'ק">צ'ק</option>
-            <option value="העברה בנקאית">העברה בנקאית</option>
+            {PAYMENT_METHODS.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
 
@@ -232,8 +234,8 @@ export default function ReceiptsView({ isManager }) {
     }
   }
 
-  const totalExpenses = receipts.filter(r => r.transaction_type === 'expense').reduce((s,r) => s + Number(r.amount), 0)
-  const totalIncome = receipts.filter(r => r.transaction_type === 'income').reduce((s,r) => s + Number(r.amount), 0)
+  const totalExpenses = receipts.filter(r => r.transaction_type !== 'Client Deposit' && r.transaction_type !== 'Vendor Refund').reduce((s,r) => s + Number(r.amount), 0)
+  const totalIncome = receipts.filter(r => r.transaction_type === 'Client Deposit' || r.transaction_type === 'Vendor Refund').reduce((s,r) => s + Number(r.amount), 0)
 
   return (
     <div className="body" dir="rtl">
@@ -250,7 +252,6 @@ export default function ReceiptsView({ isManager }) {
         <SheetSetupModal onClose={() => setShowSheetSetup(false)} onSaved={() => { setShowSheetSetup(false) }} />
       )}
 
-      {/* Summary card */}
       <div style={{ margin:'10px 12px', background:'#1D9E75', borderRadius:16, padding:'16px', color:'#fff' }}>
         <div style={{ fontSize:11, opacity:.75 }}>קבלות וחשבוניות</div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:10 }}>
@@ -265,7 +266,6 @@ export default function ReceiptsView({ isManager }) {
         </div>
       </div>
 
-      {/* Upload zone */}
       <div style={{ margin:'0 12px 10px' }}>
         <input ref={fileInputRef} type="file" accept="image/*,application/pdf" onChange={handleFile} style={{ display:'none' }} id="receipt-upload" />
         <label htmlFor="receipt-upload"
@@ -298,16 +298,16 @@ export default function ReceiptsView({ isManager }) {
       {receipts.length === 0 && <div className="empty"><div className="empty-sub">עדיין לא הועלו קבלות</div></div>}
       {receipts.map(r => (
         <div key={r.id} style={{ background:'#fff', margin:'0 12px 6px', borderRadius:14, padding:'11px 13px', display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:3, borderRadius:2, alignSelf:'stretch', background: r.transaction_type==='income' ? '#1D9E75' : '#E24B4A' }}/>
+          <div style={{ width:3, borderRadius:2, alignSelf:'stretch', background: (r.transaction_type==='Client Deposit'||r.transaction_type==='Vendor Refund') ? '#1D9E75' : '#E24B4A' }}/>
           <div style={{ flex:1 }}>
-            <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{r.memo || 'קבלה'}</div>
+            <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{r.memo || r.transaction_type}</div>
             <div style={{ fontSize:11, color:'#8E8E93', marginTop:1 }}>
-              {r.project_name && `${r.project_name} · `}{r.payment_method || ''}
+              {r.transaction_type}{r.project_name && ` · ${r.project_name}`}{r.billable && ' · Billable'}
             </div>
           </div>
           <div style={{ textAlign:'left' }}>
-            <div style={{ fontSize:13, fontWeight:700, color: r.transaction_type==='income' ? '#1D9E75' : '#E24B4A' }}>
-              {r.transaction_type==='income' ? '+' : '-'}{fmt(r.amount)}
+            <div style={{ fontSize:13, fontWeight:700, color: (r.transaction_type==='Client Deposit'||r.transaction_type==='Vendor Refund') ? '#1D9E75' : '#E24B4A' }}>
+              {fmt(r.amount)}
             </div>
             {r.file_url && (
               <a href={r.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize:10, color:'#185FA5' }} onClick={e => e.stopPropagation()}>
