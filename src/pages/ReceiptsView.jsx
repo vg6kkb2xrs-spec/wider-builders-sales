@@ -70,7 +70,6 @@ function ReviewModal({ scanned, fileUrl, leads, sheetId, onClose, onSaved }) {
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [syncSheet, setSyncSheet] = useState(!!sheetId)
 
   const save = async () => {
     if (!form.amount || Number(form.amount) <= 0) return setError('הכנס סכום')
@@ -89,7 +88,7 @@ function ReviewModal({ scanned, fileUrl, leads, sheetId, onClose, onSaved }) {
         file_url: fileUrl,
       })
 
-      if (syncSheet && sheetId) {
+      if (sheetId) {
         try {
           await appendToSheet(sheetId, [
             timestamp,
@@ -165,13 +164,6 @@ function ReviewModal({ scanned, fileUrl, leads, sheetId, onClose, onSaved }) {
           <label>הערה</label>
           <input value={form.memo} onChange={e => setForm(f => ({...f, memo: e.target.value}))} />
         </div>
-
-        {sheetId && (
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
-            <input type="checkbox" id="syncSheet" checked={syncSheet} onChange={e => setSyncSheet(e.target.checked)} style={{ width:18, height:18 }} />
-            <label htmlFor="syncSheet" style={{ fontSize:13, color:'#1a1a1a' }}>סנכרן גם לגיליון Google Sheets</label>
-          </div>
-        )}
 
         {error && <div className="field-error">{error}</div>}
         <button className="submit-btn" onClick={save} disabled={saving}>{saving ? 'שומר...' : '✓ אשר ושמור'}</button>
@@ -330,4 +322,5 @@ export default function ReceiptsView({ isManager }) {
     </div>
   )
 }
+
 
