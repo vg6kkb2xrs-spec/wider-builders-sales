@@ -460,7 +460,7 @@ export default function ReceiptsView({ isManager }) {
           <div style={{ width:3, borderRadius:2, alignSelf:'stretch', background: (r.transaction_type==='Client Deposit'||r.transaction_type==='Vendor Refund') ? '#1D9E75' : '#E24B4A' }}/>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{r.memo || r.transaction_type}</div>
-            <div style={{ fontSize:11, color:'#8E8E93', marginTop:1 }}>
+            <div style={{ fontSize:11, color:'#8E8E93', marginTop:1, unicodeBidi:'plaintext' }}>
               {r.transaction_type}{r.project_name && ` · ${r.project_name}`}{r.billable && ' · Billable'}
             </div>
           </div>
