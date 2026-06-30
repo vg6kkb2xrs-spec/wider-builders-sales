@@ -297,14 +297,12 @@ export default function ReceiptsView({ isManager }) {
         {scanError && <div className="field-error" style={{ marginTop:8 }}>{scanError}</div>}
       </div>
 
-      {isManager && (
-        <div style={{ margin:'0 12px 10px', textAlign:'center' }}>
-          <button onClick={() => setShowSheetSetup(true)}
-            style={{ fontSize:12, color:'#8E8E93', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>
-            {sheetId ? '✓ מחובר לגיליון Google Sheets — שנה' : 'חבר גיליון Google Sheets'}
-          </button>
-        </div>
-      )}
+      <div style={{ margin:'0 12px 10px', textAlign:'center' }}>
+        <button onClick={() => setShowSheetSetup(true)}
+          style={{ fontSize:12, color:'#8E8E93', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>
+          {sheetId ? '✓ מחובר לגיליון Google Sheets — שנה' : 'חבר גיליון Google Sheets'}
+        </button>
+      </div>
 
       <div className="sec-hdr">קבלות אחרונות</div>
       {receipts.length === 0 && <div className="empty"><div className="empty-sub">עדיין לא הועלו קבלות</div></div>}
