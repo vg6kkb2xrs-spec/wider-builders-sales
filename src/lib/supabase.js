@@ -223,3 +223,27 @@ export async function updateCashflowEntry(id, entry) {
   await supabase.from('cashflow_entries').update(entry).eq('id', id)
 }
 
+
+
+// ===== RECEIPTS =====
+export async function getReceipts() {
+  const { data } = await supabase
+    .from('receipts')
+    .select('*')
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function addReceipt(receipt) {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('receipts')
+    .insert({ ...receipt, uploaded_by: user.id })
+    .select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteReceipt(id) {
+  await supabase.from('receipts').delete().eq('id', id)
+}
