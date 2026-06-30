@@ -39,7 +39,7 @@ export default function AgentDashboard({session}){
   const monthly=calcMonthly(annual,retro,won)
   const mLeft=12-new Date().getMonth()
 
-  const stale=leads.filter(l=>(daysSince(l.last_contact_at||l.updated_at)||0)>=7&&!['completed','closed_lost','frozen'].includes(l.stage))
+  const stale=leads.filter(l=>(daysSince(l.last_contact_at||l.updated_at)||0)>=7&&!['completed','closed_lost','frozen','closed_won'].includes(l.stage))
   const todayM=leads.filter(l=>l.visit_datetime&&new Date(l.visit_datetime).toDateString()===new Date().toDateString())
   const active=leads.filter(l=>!['completed','closed_lost','frozen'].includes(l.stage))
   const fresh=active.filter(l=>(daysSince(l.last_contact_at||l.updated_at)||0)<7)
@@ -90,17 +90,10 @@ export default function AgentDashboard({session}){
           </div>
         )}
 
-        {stale.length>0&&(
-          <div className="urg-card">
-            <div className="urg-hdr"><div className="urg-dot"/><div className="urg-ttl">דורש טיפול</div></div>
-            {stale.map(l=>(
-              <div key={l.id} className="urg-row">
-                <div><div className="tc-addr">{l.project_address}</div><div className="tc-client">{l.client_name}</div></div>
-                <div className="urg-days">{daysSince(l.last_contact_at||l.updated_at)} ימים</div>
-              </div>
-            ))}
-          </div>
-        )}
+        {stale.length>0&&<>
+          <div className="sec-hdr" style={{color:'#E24B4A'}}>⚠ דורש טיפול</div>
+          {stale.map(l=><LeadCard key={l.id} lead={l} onUpdate={load} onSchedule={setSchedLead}/>)}
+        </>}
 
         {fresh.length>0&&<>
           <div className="sec-hdr">לידים פעילים</div>
@@ -164,6 +157,7 @@ export default function AgentDashboard({session}){
     </div>
   )
 }
+
 
 
 
