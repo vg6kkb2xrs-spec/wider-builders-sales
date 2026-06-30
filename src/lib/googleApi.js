@@ -1,4 +1,6 @@
 // Google OAuth + Drive/Sheets integration for receipts
+import { supabase } from './supabase'
+
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets'
 
@@ -101,14 +103,26 @@ export async function uploadFileToDrive(file) {
 }
 
 // ===== SHEETS =====
-const SHEET_ID_KEY = 'wider_sheets_id'
+// Sheet ID is now shared across all users via Supabase (app_settings table)
+// instead of localStorage, which was per-browser and not shared between agents.
+let cachedSheetId = undefined // undefined = not loaded yet, null = loaded but empty
 
-export function getSavedSheetId() {
-  return localStorage.getItem(SHEET_ID_KEY)
+export async function getSavedSheetId() {
+  if (cachedSheetId !== undefined) return cachedSheetId
+  const { data } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', 'sheets_id')
+    .maybeSingle()
+  cachedSheetId = data?.value || null
+  return cachedSheetId
 }
 
-export function saveSheetId(id) {
-  localStorage.setItem(SHEET_ID_KEY, id)
+export async function saveSheetId(id) {
+  await supabase
+    .from('app_settings')
+    .upsert({ key: 'sheets_id', value: id }, { onConflict: 'key' })
+  cachedSheetId = id
 }
 
 export async function appendToSheet(sheetId, row, sheetName) {
