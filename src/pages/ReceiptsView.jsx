@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { getReceipts, addReceipt, updateReceipt, deleteReceipt } from '../lib/supabase'
-import { uploadFileToDrive, appendToSheet, getSavedSheetId, saveSheetId } from '../lib/googleApi'
+import { uploadFileToDrive, appendToSheet, updateSheetRow, getSavedSheetId, saveSheetId } from '../lib/googleApi'
 
 const fmt = (n) => `$${Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2})}`
 
@@ -90,7 +90,7 @@ function ReviewModal({ scanned, fileUrl, leads, sheetId, onClose, onSaved }) {
 
       if (sheetId) {
         try {
-          await appendToSheet(sheetId, [
+          const sheetResult = await appendToSheet(sheetId, [
             timestamp,
             form.project_name || '',
             form.transaction_type,
@@ -100,6 +100,9 @@ function ReviewModal({ scanned, fileUrl, leads, sheetId, onClose, onSaved }) {
             form.memo || '',
             fileUrl || '',
           ])
+          if (sheetResult?.rowNumber) {
+            await updateReceipt(receipt.id, { sheet_row: sheetResult.rowNumber, sheet_tab: sheetResult.tabName })
+          }
         } catch (sheetErr) {
           console.error('Sheet sync failed:', sheetErr)
         }
@@ -172,7 +175,7 @@ function ReviewModal({ scanned, fileUrl, leads, sheetId, onClose, onSaved }) {
   )
 }
 
-function EditReceiptModal({ receipt, leads, onClose, onSaved, onDeleted }) {
+function EditReceiptModal({ receipt, leads, sheetId, onClose, onSaved, onDeleted }) {
   const [form, setForm] = useState({
     project_name: receipt.project_name || '',
     transaction_type: receipt.transaction_type || 'General Expense',
@@ -198,6 +201,24 @@ function EditReceiptModal({ receipt, leads, onClose, onSaved, onDeleted }) {
         payment_method: form.payment_method || null,
         memo: form.memo || null,
       })
+
+      if (sheetId && receipt.sheet_row) {
+        try {
+          await updateSheetRow(sheetId, receipt.sheet_row, [
+            receipt.created_at ? new Date(receipt.created_at).toLocaleDateString('en-US',{year:'numeric',month:'2-digit',day:'2-digit'}) + ' ' + new Date(receipt.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}) : '',
+            form.project_name || '',
+            form.transaction_type,
+            form.amount,
+            form.billable ? 'Billable' : '',
+            form.payment_method || '',
+            form.memo || '',
+            receipt.file_url || '',
+          ], receipt.sheet_tab)
+        } catch (sheetErr) {
+          console.error('Sheet row update failed:', sheetErr)
+        }
+      }
+
       onSaved()
     } catch (e) {
       setError(e.message)
@@ -281,9 +302,16 @@ function EditReceiptModal({ receipt, leads, onClose, onSaved, onDeleted }) {
           {deleting ? 'מוחק...' : 'מחק קבלה'}
         </button>
 
-        <div style={{ fontSize:11, color:'#B0B0B0', marginTop:10, textAlign:'center' }}>
-          שינויים כאן לא יתעדכנו אוטומטית בגיליון Google Sheets
-        </div>
+        {sheetId && receipt.sheet_row && (
+          <div style={{ fontSize:11, color:'#1D9E75', marginTop:10, textAlign:'center' }}>
+            ✓ שינויים כאן יתעדכנו גם בגיליון Google Sheets
+          </div>
+        )}
+        {sheetId && !receipt.sheet_row && (
+          <div style={{ fontSize:11, color:'#B0B0B0', marginTop:10, textAlign:'center' }}>
+            קבלה זו נוצרה לפני חיבור הגיליון — שינויים כאן לא יתעדכנו בו
+          </div>
+        )}
       </div>
     </div>
   )
@@ -377,6 +405,7 @@ export default function ReceiptsView({ isManager }) {
         <EditReceiptModal
           receipt={editingReceipt}
           leads={leads}
+          sheetId={sheetId}
           onClose={() => setEditingReceipt(null)}
           onSaved={() => { setEditingReceipt(null); load() }}
           onDeleted={() => { setEditingReceipt(null); load() }}
@@ -450,6 +479,7 @@ export default function ReceiptsView({ isManager }) {
     </div>
   )
 }
+
 
 
 
