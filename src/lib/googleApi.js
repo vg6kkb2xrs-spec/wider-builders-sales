@@ -161,7 +161,40 @@ export async function appendToSheet(sheetId, row, sheetName) {
     const err = await res.json()
     throw new Error(err.error?.message || 'שגיאה בכתיבה לגיליון')
   }
+  const data = await res.json()
+  return { ...data, rowNumber: nextRow, tabName }
+}
+
+export async function getSheetTabName(sheetId) {
+  const token = await ensureGoogleToken()
+  const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties.title`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const meta = await metaRes.json()
+  return meta.sheets?.[0]?.properties?.title || 'Sheet1'
+}
+
+export async function updateSheetRow(sheetId, rowNumber, row, sheetName) {
+  const token = await ensureGoogleToken()
+  let tabName = sheetName
+  if (!tabName) {
+    tabName = await getSheetTabName(sheetId)
+  }
+  const range = `'${tabName}'!A${rowNumber}:H${rowNumber}`
+  const res = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
+    {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: [row] }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error?.message || 'שגיאה בעדכון הגיליון')
+  }
   return res.json()
 }
+
 
 
