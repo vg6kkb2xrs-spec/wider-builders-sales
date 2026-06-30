@@ -102,7 +102,7 @@ export default function AddEventModal({ agentId, defaultLeadId, defaultDate, onC
         ) : (
           <div className="field">
             <label>קשר לליד קיים (אופציונלי)</label>
-            <select value={leadId} onChange={e => setLeadId(e.target.value)}>
+            <select className="address-select" value={leadId} onChange={e => setLeadId(e.target.value)}>
               <option value="">— {type === 'meeting' ? 'פגישה עצמאית' : 'תזכורת כללית'} —</option>
               {leads.map(l => (
                 <option key={l.id} value={l.id}>{l.project_address} · {l.client_name}</option>
@@ -137,3 +137,4 @@ export default function AddEventModal({ agentId, defaultLeadId, defaultDate, onC
     </div>
   )
 }
+
