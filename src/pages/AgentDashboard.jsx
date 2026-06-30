@@ -5,6 +5,7 @@ import AddLeadModal from '../components/AddLeadModal'
 import ScheduleVisitModal from '../components/ScheduleVisitModal'
 import LeadCard from '../components/LeadCard'
 import MeetingsView from './MeetingsView'
+import CalendarView from './CalendarView'
 
 const fmtK=(n)=>{const v=Number(n||0);return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}K`:`$${v}`}
 const fmt=(n)=>n?`$${Number(n).toLocaleString()}`:'—'
@@ -145,15 +146,15 @@ export default function AgentDashboard({session}){
           <div className="nb-icon"><i className="ti ti-home" aria-hidden="true"/></div>בית
         </button>
         <button className={`nb ${tab==='meetings'?'on':''}`} onClick={()=>setTab('meetings')} style={{position:'relative'}}>
-          <div className="nb-icon"><i className="ti ti-calendar" aria-hidden="true"/></div>
+          <div className="nb-icon"><i className="ti ti-users" aria-hidden="true"/></div>
           {todayM.length>0&&<span className="nb-badge">{todayM.length}</span>}
           פגישות
         </button>
+        <button className={`nb ${tab==='calendar'?'on':''}`} onClick={()=>setTab('calendar')}>
+          <div className="nb-icon"><i className="ti ti-calendar" aria-hidden="true"/></div>יומן
+        </button>
         <button className={`nb ${tab==='leads'?'on':''}`} onClick={()=>setTab('leads')}>
           <div className="nb-icon"><i className="ti ti-list" aria-hidden="true"/></div>לידים
-        </button>
-        <button className="nb" onClick={()=>setShowAdd(true)}>
-          <div className="nb-icon"><i className="ti ti-plus" aria-hidden="true"/></div>הוסף
         </button>
       </nav>
 
@@ -162,4 +163,5 @@ export default function AgentDashboard({session}){
     </div>
   )
 }
+
 
