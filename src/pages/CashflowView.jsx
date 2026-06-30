@@ -199,11 +199,21 @@ export default function CashflowView({ isManager }) {
 
   const currentBalance = Number(balance?.amount || 0)
 
-  // Compute projection
+  // Compute the two independent projection windows
   const today = new Date()
   today.setHours(0,0,0,0)
-  const rangeEnd = new Date(today)
-  rangeEnd.setDate(rangeEnd.getDate() + (view === 'week' ? 7 : 30))
+  const weekEnd = new Date(today)
+  weekEnd.setDate(weekEnd.getDate() + 7)
+  const monthEnd = new Date(today)
+  monthEnd.setDate(monthEnd.getDate() + 30)
+
+  const sumDelta = (occs) => occs.reduce((s,o) => s + (o.type==='income' ? Number(o.amount) : -Number(o.amount)), 0)
+
+  const weekProjection = currentBalance + sumDelta(entries.flatMap(e => expandRecurring(e, today, weekEnd)))
+  const monthProjection = currentBalance + sumDelta(entries.flatMap(e => expandRecurring(e, today, monthEnd)))
+
+  // List range depends on the selected tab (week/month toggle)
+  const rangeEnd = view === 'week' ? weekEnd : monthEnd
 
   const occurrences = entries.flatMap(e => expandRecurring(e, today, rangeEnd))
     .sort((a,b) => a._date - b._date)
@@ -213,10 +223,6 @@ export default function CashflowView({ isManager }) {
     running += o.type === 'income' ? Number(o.amount) : -Number(o.amount)
     return { ...o, _runningBalance: running }
   })
-
-  const projectedEnd = occurrencesWithBalance.length > 0
-    ? occurrencesWithBalance[occurrencesWithBalance.length - 1]._runningBalance
-    : currentBalance
 
   // Group by day
   const grouped = {}
@@ -262,14 +268,14 @@ export default function CashflowView({ isManager }) {
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:12 }}>
           <div style={{ background:'rgba(255,255,255,.12)', borderRadius:10, padding:'8px 10px' }}>
             <div style={{ fontSize:10, opacity:.75 }}>צפי לסוף השבוע</div>
-            <div style={{ fontSize:15, fontWeight:700, marginTop:1 }}>
-              {fmtK(view==='week' ? projectedEnd : (occurrencesWithBalance.find(o => o._date - today >= 6*86400000)?._runningBalance ?? currentBalance))}
+            <div style={{ fontSize:15, fontWeight:700, marginTop:1, color: weekProjection < 0 ? '#FFB3B3' : '#fff' }}>
+              {fmtK(weekProjection)}
             </div>
           </div>
           <div style={{ background:'rgba(255,255,255,.12)', borderRadius:10, padding:'8px 10px' }}>
             <div style={{ fontSize:10, opacity:.75 }}>צפי לסוף החודש</div>
-            <div style={{ fontSize:15, fontWeight:700, marginTop:1, color: projectedEnd < 0 ? '#FFB3B3' : '#fff' }}>
-              {fmtK(view==='month' ? projectedEnd : currentBalance + entries.flatMap(e=>expandRecurring(e,today,(()=>{const d=new Date(today);d.setDate(d.getDate()+30);return d})())).reduce((s,o)=>s+(o.type==='income'?Number(o.amount):-Number(o.amount)),0))}
+            <div style={{ fontSize:15, fontWeight:700, marginTop:1, color: monthProjection < 0 ? '#FFB3B3' : '#fff' }}>
+              {fmtK(monthProjection)}
             </div>
           </div>
         </div>
@@ -327,4 +333,5 @@ export default function CashflowView({ isManager }) {
     </div>
   )
 }
+
 
