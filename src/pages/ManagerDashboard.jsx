@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import MeetingsView from './MeetingsView'
 import CashflowView from './CashflowView'
+import ReceiptsView from './ReceiptsView'
 
 const fmt=(n)=>`$${Number(n||0).toLocaleString()}`
 const fmtK=(n)=>{const v=Number(n||0);return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}K`:`$${v}`}
@@ -78,6 +79,7 @@ function AgentCard({agent,onEdit}){
 
 export default function ManagerDashboard({session}){
   const [tab,setTab]=useState('agents')
+  const [financeView,setFinanceView]=useState('cashflow')
   const [agents,setAgents]=useState([])
   const [leads,setLeads]=useState([])
   const [editing,setEditing]=useState(null)
@@ -138,7 +140,23 @@ export default function ManagerDashboard({session}){
 
       {/* MEETINGS TAB */}
       {tab==='meetings'&&<MeetingsView agentId={session.user.id} isManager={true}/>}
-      {tab==='cashflow'&&<CashflowView isManager={true}/>}
+      {tab==='cashflow'&&(
+        <>
+          <div style={{ display:'flex', background:'rgba(0,0,0,.03)', borderRadius:10, padding:3, margin:'10px 12px 0' }}>
+            <button onClick={()=>setFinanceView('cashflow')}
+              style={{ flex:1, padding:'8px', fontSize:12, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
+                background: financeView==='cashflow' ? '#185FA5' : 'none', color: financeView==='cashflow' ? '#fff' : '#8E8E93' }}>
+              💰 תזרים
+            </button>
+            <button onClick={()=>setFinanceView('receipts')}
+              style={{ flex:1, padding:'8px', fontSize:12, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
+                background: financeView==='receipts' ? '#1D9E75' : 'none', color: financeView==='receipts' ? '#fff' : '#8E8E93' }}>
+              📄 קבלות
+            </button>
+          </div>
+          {financeView==='cashflow' ? <CashflowView isManager={true}/> : <ReceiptsView isManager={true}/>}
+        </>
+      )}
 
       {/* LEADS TAB */}
       {tab==='leads'&&<div className="body">
@@ -178,4 +196,5 @@ export default function ManagerDashboard({session}){
     </div>
   )
 }
+
 
