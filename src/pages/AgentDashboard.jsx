@@ -6,6 +6,7 @@ import AddEventModal from '../components/AddEventModal'
 import LeadCard from '../components/LeadCard'
 import CashflowView from './CashflowView'
 import CalendarView from './CalendarView'
+import ReceiptsView from './ReceiptsView'
 
 const fmtK=(n)=>{const v=Number(n||0);return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}K`:`$${v}`}
 const fmt=(n)=>n?`$${Number(n).toLocaleString()}`:'—'
@@ -18,6 +19,7 @@ export default function AgentDashboard({session}){
   const [perf,setPerf]=useState(null)
   const [agent,setAgent]=useState(null)
   const [tab,setTab]=useState('home')
+  const [financeView,setFinanceView]=useState('cashflow')
   const [filter,setFilter]=useState('active')
   const [search,setSearch]=useState('')
   const [showAdd,setShowAdd]=useState(false)
@@ -117,7 +119,23 @@ export default function AgentDashboard({session}){
       </div>}
 
       {/* MEETINGS */}
-      {tab==='cashflow'&&<CashflowView isManager={false}/>}
+      {tab==='cashflow'&&(
+        <>
+          <div style={{ display:'flex', background:'rgba(0,0,0,.03)', borderRadius:10, padding:3, margin:'10px 12px 0' }}>
+            <button onClick={()=>setFinanceView('cashflow')}
+              style={{ flex:1, padding:'8px', fontSize:12, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
+                background: financeView==='cashflow' ? '#185FA5' : 'none', color: financeView==='cashflow' ? '#fff' : '#8E8E93' }}>
+              💰 תזרים
+            </button>
+            <button onClick={()=>setFinanceView('receipts')}
+              style={{ flex:1, padding:'8px', fontSize:12, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
+                background: financeView==='receipts' ? '#1D9E75' : 'none', color: financeView==='receipts' ? '#fff' : '#8E8E93' }}>
+              📄 קבלות
+            </button>
+          </div>
+          {financeView==='cashflow' ? <CashflowView isManager={false}/> : <ReceiptsView isManager={false}/>}
+        </>
+      )}
       {tab==='calendar'&&<CalendarView agentId={session.user.id}/>}
 
       {/* ALL LEADS */}
@@ -155,6 +173,7 @@ export default function AgentDashboard({session}){
     </div>
   )
 }
+
 
 
 
