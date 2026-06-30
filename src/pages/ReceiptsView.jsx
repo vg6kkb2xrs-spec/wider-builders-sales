@@ -317,7 +317,7 @@ function EditReceiptModal({ receipt, leads, sheetId, onClose, onSaved, onDeleted
   )
 }
 
-export default function ReceiptsView({ isManager }) {
+export default function ReceiptsView({ isManager, autoTriggerUpload }) {
   const [receipts, setReceipts] = useState([])
   const [leads, setLeads] = useState([])
   const [scanning, setScanning] = useState(false)
@@ -339,6 +339,12 @@ export default function ReceiptsView({ isManager }) {
     setSheetId(sid)
   }
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    if (autoTriggerUpload && fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }, [autoTriggerUpload])
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0]
@@ -479,6 +485,7 @@ export default function ReceiptsView({ isManager }) {
     </div>
   )
 }
+
 
 
 
