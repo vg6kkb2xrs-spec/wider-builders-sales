@@ -78,24 +78,16 @@ export default function AddEventModal({ agentId, defaultLeadId, defaultDate, onC
         </div>
 
         {/* type picker */}
-        <div style={{ display:'flex', background:'rgba(0,0,0,.03)', borderRadius:10, padding:3, marginBottom:14 }}>
-          <button onClick={() => setType('meeting')}
-            style={{ flex:1, padding:'9px', fontSize:13, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
-              background: type==='meeting' ? '#1D9E75' : 'none', color: type==='meeting' ? '#fff' : '#8E8E93' }}>
-            📅 פגישה
-          </button>
-          <button onClick={() => setType('task')}
-            style={{ flex:1, padding:'9px', fontSize:13, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
-              background: type==='task' ? '#185FA5' : 'none', color: type==='task' ? '#fff' : '#8E8E93' }}>
-            ✓ משימה / תזכורת
-          </button>
+        <div className="seg" style={{ margin:'0 0 14px' }}>
+          <button className={type==='meeting'?'on':''} onClick={() => setType('meeting')}>פגישה</button>
+          <button className={type==='task'?'on':''} onClick={() => setType('task')}>משימה / תזכורת</button>
         </div>
 
         {/* lead link */}
         {lockedLead ? (
           <div className="field">
             <label>קשור לליד</label>
-            <div style={{ padding:'11px 13px', borderRadius:10, background:'#F2F2F7', fontSize:14, color:'#1a1a1a' }}>
+            <div style={{ padding:'11px 13px', borderRadius:10, background:'var(--input)', fontSize:14, color:'var(--ink)' }}>
               {lockedLead.project_address} · {lockedLead.client_name}
             </div>
           </div>
@@ -131,7 +123,7 @@ export default function AddEventModal({ agentId, defaultLeadId, defaultDate, onC
 
         {error && <div className="field-error">{error}</div>}
         <button className="submit-btn" onClick={save} disabled={saving}>
-          {saving ? 'שומר...' : type === 'meeting' ? '📅 הוסף פגישה' : '✓ הוסף תזכורת'}
+          {saving ? 'שומר...' : type === 'meeting' ? 'הוסף פגישה' : 'הוסף תזכורת'}
         </button>
       </div>
     </div>

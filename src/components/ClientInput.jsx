@@ -58,16 +58,16 @@ export default function ClientInput({ name, phone, onChangeName, onChangePhone }
             onFocus={() => suggestions.length > 0 && setShowList(true)}
           />
           {showList && suggestions.length > 0 && (
-            <div style={{ position:'absolute', top:'100%', right:0, left:0, zIndex:300, background:'#fff', borderRadius:12, border:'.5px solid #E5E5EA', boxShadow:'0 4px 16px rgba(0,0,0,.12)', overflow:'hidden', marginTop:4 }}>
+            <div style={{ position:'absolute', top:'100%', right:0, left:0, zIndex:300, background:'#fff', borderRadius:12, border:'.5px solid var(--line)', boxShadow:'0 4px 16px rgba(0,0,0,.12)', overflow:'hidden', marginTop:4 }}>
               {suggestions.map(c => (
                 <div key={c.id} onMouseDown={() => select(c)}
-                  style={{ padding:'10px 14px', fontSize:13, cursor:'pointer', borderBottom:'.5px solid #F2F2F7', display:'flex', justifyContent:'space-between', alignItems:'center' }}
+                  style={{ padding:'10px 14px', fontSize:13, cursor:'pointer', borderBottom:'.5px solid var(--input)', display:'flex', justifyContent:'space-between', alignItems:'center' }}
                 >
                   <div>
-                    <div style={{ fontWeight:500, color:'#1a1a1a' }}>{c.name}</div>
-                    {c.phone && <div style={{ fontSize:11, color:'#8E8E93', marginTop:1 }}>📞 {c.phone}</div>}
+                    <div style={{ fontWeight:500, color:'var(--ink)' }}>{c.name}</div>
+                    {c.phone && <div style={{ fontSize:11, color:'var(--ink2)', marginTop:1 }}>📞 {c.phone}</div>}
                   </div>
-                  <span style={{ fontSize:11, color:'#1D9E75' }}>בחר</span>
+                  <span style={{ fontSize:11, color:'var(--accent-deep)' }}>בחר</span>
                 </div>
               ))}
             </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { addLog } from '../lib/supabase'
+import Icon from '../components/Icon'
 
 function isToday(d){
   const date=new Date(d)
@@ -86,7 +87,7 @@ function AddMeetingModal({ agentId, onClose, onSaved }) {
 
         {error && <div className="field-error">{error}</div>}
         <button className="submit-btn" onClick={save} disabled={saving}>
-          {saving ? 'שומר...' : '📅 הוסף פגישה'}
+          {saving ? 'שומר...' : 'הוסף פגישה'}
         </button>
       </div>
     </div>
@@ -110,7 +111,7 @@ function NoteModal({lead,type,agentId,onClose,onSaved}){
           <h2>{prefix}</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
-        <div className="visit-addr">📍 {lead.project_address}</div>
+        <div className="visit-addr">{lead.project_address}</div>
         <div className="visit-client">{lead.client_name}</div>
         <div className="field">
           <label>{type==='prep'?'מה לבדוק / להביא:':'מה עלה בפגישה:'}</label>
@@ -182,7 +183,7 @@ export default function MeetingsView({agentId,isManager}){
       {!isManager && (
         <div style={{padding:'10px 10px 0'}}>
           <button className="add-btn" onClick={()=>setShowAdd(true)}>
-            <i className="ti ti-calendar-plus" style={{fontSize:16}} aria-hidden="true"/>
+            <Icon name="calendar-plus" size={18} style={{stroke:'#fff'}}/>
             הוסף פגישה
           </button>
         </div>
@@ -203,17 +204,17 @@ export default function MeetingsView({agentId,isManager}){
               <div style={{flex:1}}>
                 <div className="m-addr">{lead.project_address}</div>
                 {lead.client_name && <div className="m-client">{lead.client_name}{lead.description?` · ${lead.description}`:''}</div>}
-                {isManager&&lead.agents?.name&&<div style={{fontSize:10,color:'#185FA5',marginTop:2}}>👤 {lead.agents.name}</div>}
-                {lead.lead_notes?.some(n=>n.content.startsWith('📋'))&&<div className="m-prep">📋 יש הכנה לפגישה</div>}
+                {isManager&&lead.agents?.name&&<div style={{fontSize:10,color:'var(--ink2)',marginTop:2}}>👤 {lead.agents.name}</div>}
+                {lead.lead_notes?.some(n=>n.content.startsWith('📋'))&&<div className="m-prep" style={{display:'flex',alignItems:'center',gap:5}}><Icon name="clipboard" size={13}/> יש הכנה לפגישה</div>}
                 {!isManager&&(
                   <div style={{display:'flex',gap:6,marginTop:8}}>
                     <button onClick={()=>setNoteModal({lead,type:'prep'})}
-                      style={{fontSize:11,background:'#E6F1FB',color:'#185FA5',border:'none',borderRadius:20,padding:'4px 10px',cursor:'pointer',fontFamily:'inherit'}}>
-                      📋 הכנה
+                      style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11.5,fontWeight:600,background:'var(--line2)',color:'var(--ink2)',border:'none',borderRadius:20,padding:'6px 12px',cursor:'pointer',fontFamily:'inherit'}}>
+                      <Icon name="clipboard" size={14}/> הכנה
                     </button>
                     <button onClick={()=>setNoteModal({lead,type:'summary'})}
-                      style={{fontSize:11,background:'#E8F5EF',color:'#1D9E75',border:'none',borderRadius:20,padding:'4px 10px',cursor:'pointer',fontFamily:'inherit'}}>
-                      📝 סיכום
+                      style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11.5,fontWeight:600,background:'var(--accent-soft)',color:'var(--accent-deep)',border:'none',borderRadius:20,padding:'6px 12px',cursor:'pointer',fontFamily:'inherit'}}>
+                      <Icon name="note" size={14}/> סיכום
                     </button>
                   </div>
                 )}
@@ -236,11 +237,11 @@ export default function MeetingsView({agentId,isManager}){
               <div>
                 <div className="m-addr">{lead.project_address}</div>
                 {lead.client_name&&<div className="m-client">{lead.client_name}</div>}
-                {isManager&&lead.agents?.name&&<div style={{fontSize:10,color:'#8E8E93'}}>👤 {lead.agents.name}</div>}
+                {isManager&&lead.agents?.name&&<div style={{fontSize:10,color:'var(--ink2)'}}>👤 {lead.agents.name}</div>}
                 {!isManager&&(
                   <button onClick={()=>setNoteModal({lead,type:'summary'})}
-                    style={{fontSize:11,background:'#E8F5EF',color:'#1D9E75',border:'none',borderRadius:20,padding:'4px 10px',cursor:'pointer',marginTop:6,fontFamily:'inherit'}}>
-                    📝 סיכום
+                    style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11.5,fontWeight:600,background:'var(--accent-soft)',color:'var(--accent-deep)',border:'none',borderRadius:20,padding:'6px 12px',cursor:'pointer',marginTop:6,fontFamily:'inherit'}}>
+                    <Icon name="note" size={14}/> סיכום
                   </button>
                 )}
               </div>

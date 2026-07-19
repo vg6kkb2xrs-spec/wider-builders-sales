@@ -172,7 +172,7 @@ function DetailScreen({ lead, onBack, onUpdate, onSchedule }) {
           <div className="ir"><span className="il">שלב</span><span className="iv">{s.label}</span></div>
           <div className="ir"><span className="il">פגישה</span><span className="iv">{lead.visit_datetime ? new Date(lead.visit_datetime).toLocaleDateString('he-IL',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : 'לא נקבעה'}</span></div>
           {lead.description && <div className="ir"><span className="il">תיאור</span><span className="iv">{lead.description}</span></div>}
-          <div className="ir"><span className="il">עודכן</span><span className="iv" style={{color:'#8E8E93'}}>לפני {daysSince(lead.last_contact_at||lead.updated_at)||0} ימים</span></div>
+          <div className="ir"><span className="il">עודכן</span><span className="iv" style={{color:'var(--ink3)'}}>לפני {daysSince(lead.last_contact_at||lead.updated_at)||0} ימים</span></div>
         </div>
 
         {mode === 'view' && <>
@@ -210,7 +210,7 @@ function DetailScreen({ lead, onBack, onUpdate, onSchedule }) {
               {[...lead.lead_notes].reverse().map(n => (
                 <div key={n.id} className={`note-item ${n.content.startsWith('📝')?'g':''}`}>
                   {n.content}
-                  <div style={{ fontSize: 10, color: '#8E8E93', marginTop: 4 }}>
+                  <div style={{ fontSize: 10, color: 'var(--ink3)', marginTop: 4 }}>
                     {new Date(n.created_at).toLocaleDateString('he-IL',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
                   </div>
                 </div>

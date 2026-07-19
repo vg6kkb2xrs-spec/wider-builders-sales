@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getBankBalance, setBankBalance, getCashflowEntries, addCashflowEntry, deleteCashflowEntry, updateCashflowEntry } from '../lib/supabase'
+import Icon from '../components/Icon'
 
 const fmtK = (n) => {
   const v = Number(n||0)
@@ -114,14 +115,14 @@ function AddEntryModal({ existing, onClose, onSaved, onDelete }) {
 
         <div style={{ display:'flex', gap:8, marginBottom:14 }}>
           <button onClick={() => setType('income')}
-            style={{ flex:1, padding:10, borderRadius:12, border: type==='income' ? '1.5px solid #1D9E75' : '1.5px solid #E5E5EA',
-              background: type==='income' ? '#E8F5EF' : '#fff', color: type==='income' ? '#1D9E75' : '#8E8E93',
+            style={{ flex:1, padding:10, borderRadius:12, border: type==='income' ? '1.5px solid var(--accent-deep)' : '1.5px solid var(--line)',
+              background: type==='income' ? 'var(--accent-soft)' : '#fff', color: type==='income' ? 'var(--accent-deep)' : 'var(--ink2)',
               fontSize:13, fontWeight:600, cursor:'pointer' }}>
             הכנסה
           </button>
           <button onClick={() => setType('expense')}
-            style={{ flex:1, padding:10, borderRadius:12, border: type==='expense' ? '1.5px solid #E24B4A' : '1.5px solid #E5E5EA',
-              background: type==='expense' ? '#FFF5F5' : '#fff', color: type==='expense' ? '#E24B4A' : '#8E8E93',
+            style={{ flex:1, padding:10, borderRadius:12, border: type==='expense' ? '1.5px solid var(--alert-deep)' : '1.5px solid var(--line)',
+              background: type==='expense' ? 'var(--alert-soft)' : '#fff', color: type==='expense' ? 'var(--alert-deep)' : 'var(--ink2)',
               fontSize:13, fontWeight:600, cursor:'pointer' }}>
             הוצאה
           </button>
@@ -154,7 +155,7 @@ function AddEntryModal({ existing, onClose, onSaved, onDelete }) {
           <>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
               <input type="checkbox" id="recur" checked={recurring} onChange={e => setRecurring(e.target.checked)} style={{ width:18, height:18 }} />
-              <label htmlFor="recur" style={{ fontSize:13, color:'#1a1a1a' }}>חוזר אוטומטית</label>
+              <label htmlFor="recur" style={{ fontSize:13, color:'var(--ink)' }}>חוזר אוטומטית</label>
             </div>
             {recurring && (
               <div className="field">
@@ -173,7 +174,7 @@ function AddEntryModal({ existing, onClose, onSaved, onDelete }) {
         <button className="submit-btn" onClick={save} disabled={saving}>{saving ? 'שומר...' : existing ? 'שמור שינויים' : 'הוסף'}</button>
         {existing && (
           <button onClick={remove} disabled={deleting}
-            style={{ width:'100%', marginTop:8, padding:12, background:'#FFF5F5', color:'#E24B4A', border:'1px solid #F7C1C1', borderRadius:12, fontSize:14, fontWeight:600, cursor:'pointer' }}>
+            style={{ width:'100%', marginTop:8, padding:12, background:'var(--alert-soft)', color:'var(--alert-deep)', border:'1px solid transparent', borderRadius:12, fontSize:14, fontWeight:600, cursor:'pointer' }}>
             {deleting ? 'מוחק...' : 'מחק רשומה'}
           </button>
         )}
@@ -247,7 +248,7 @@ export default function CashflowView({ isManager }) {
       )}
 
       {/* Balance card */}
-      <div style={{ margin:'10px 12px', background:'#185FA5', borderRadius:16, padding:'16px 16px 14px', color:'#fff' }}>
+      <div style={{ margin:'10px 12px', background:'var(--hero)', borderRadius:16, padding:'16px 16px 14px', color:'#fff' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
           <div>
             <div style={{ fontSize:11, opacity:.75 }}>יתרת בנק נוכחית</div>
@@ -268,13 +269,13 @@ export default function CashflowView({ isManager }) {
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:12 }}>
           <div style={{ background:'rgba(255,255,255,.12)', borderRadius:10, padding:'8px 10px' }}>
             <div style={{ fontSize:10, opacity:.75 }}>צפי לסוף השבוע</div>
-            <div style={{ fontSize:15, fontWeight:700, marginTop:1, color: weekProjection < 0 ? '#FFB3B3' : '#fff' }}>
+            <div style={{ fontSize:15, fontWeight:700, marginTop:1, color: weekProjection < 0 ? '#E3A58E' : '#fff' }}>
               {fmt(weekProjection)}
             </div>
           </div>
           <div style={{ background:'rgba(255,255,255,.12)', borderRadius:10, padding:'8px 10px' }}>
             <div style={{ fontSize:10, opacity:.75 }}>צפי לסוף החודש</div>
-            <div style={{ fontSize:15, fontWeight:700, marginTop:1, color: monthProjection < 0 ? '#FFB3B3' : '#fff' }}>
+            <div style={{ fontSize:15, fontWeight:700, marginTop:1, color: monthProjection < 0 ? '#E3A58E' : '#fff' }}>
               {fmt(monthProjection)}
             </div>
           </div>
@@ -282,15 +283,15 @@ export default function CashflowView({ isManager }) {
       </div>
 
       {/* View toggle */}
-      <div style={{ display:'flex', background:'rgba(0,0,0,.03)', borderRadius:10, padding:3, margin:'0 12px 8px' }}>
+      <div style={{ display:'flex', background:'var(--line2)', borderRadius:10, padding:3, margin:'0 12px 8px' }}>
         <button onClick={() => setView('week')}
           style={{ flex:1, padding:'7px', fontSize:12, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
-            background: view==='week' ? '#185FA5' : 'none', color: view==='week' ? '#fff' : '#8E8E93' }}>
+            background: view==='week' ? 'var(--accent)' : 'none', color: view==='week' ? '#fff' : 'var(--ink2)' }}>
           שבועי
         </button>
         <button onClick={() => setView('month')}
           style={{ flex:1, padding:'7px', fontSize:12, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
-            background: view==='month' ? '#185FA5' : 'none', color: view==='month' ? '#fff' : '#8E8E93' }}>
+            background: view==='month' ? 'var(--accent)' : 'none', color: view==='month' ? '#fff' : 'var(--ink2)' }}>
           חודשי
         </button>
       </div>
@@ -305,19 +306,19 @@ export default function CashflowView({ isManager }) {
           {items.map((item, i) => (
             <div key={item.id+i} onClick={() => isManager && setEditingEntry(item)}
               style={{ background:'#fff', margin:'0 12px 6px', borderRadius:14, padding:'11px 13px', display:'flex', alignItems:'center', gap:10, cursor: isManager ? 'pointer' : 'default' }}>
-              <div style={{ width:3, borderRadius:2, alignSelf:'stretch', background: item.type==='income' ? '#1D9E75' : '#E24B4A' }}/>
+              <div style={{ width:3, borderRadius:2, alignSelf:'stretch', background: item.type==='income' ? 'var(--accent-deep)' : 'var(--alert-deep)' }}/>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{item.description}</div>
-                <div style={{ fontSize:11, color:'#8E8E93', marginTop:1 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:'var(--ink)' }}>{item.description}</div>
+                <div style={{ fontSize:11, color:'var(--ink2)', marginTop:1 }}>
                   {item.category === 'fixed' ? 'קבוע' : 'חד פעמי'}
                   {item.is_recurring && ` · חוזר ${item.recurrence_frequency==='weekly'?'שבועי':item.recurrence_frequency==='yearly'?'שנתי':'חודשי'}`}
                 </div>
               </div>
               <div style={{ textAlign:'left' }}>
-                <div style={{ fontSize:13, fontWeight:700, color: item.type==='income' ? '#1D9E75' : '#E24B4A' }}>
+                <div style={{ fontSize:13, fontWeight:700, color: item.type==='income' ? 'var(--accent-deep)' : 'var(--alert-deep)' }}>
                   {item.type==='income' ? '+' : '-'}{fmt(item.amount)}
                 </div>
-                <div style={{ fontSize:10, color:'#B0B0B0', marginTop:1 }}>{fmtK(item._runningBalance)}</div>
+                <div style={{ fontSize:10, color:'var(--ink3)', marginTop:1 }}>{fmtK(item._runningBalance)}</div>
               </div>
             </div>
           ))}
@@ -325,8 +326,8 @@ export default function CashflowView({ isManager }) {
       ))}
 
       {isManager && (
-        <button className="add-btn" style={{ background:'#185FA5' }} onClick={() => setShowAdd(true)}>
-          <i className="ti ti-plus" style={{ fontSize:16 }} aria-hidden="true"/>
+        <button className="add-btn" onClick={() => setShowAdd(true)}>
+          <Icon name="plus" size={18} style={{ stroke:'#fff' }}/>
           הוסף תזרים
         </button>
       )}

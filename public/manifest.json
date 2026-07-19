@@ -1,11 +1,11 @@
 {
-  "name": "Brooklyn Sales",
-  "short_name": "Sales",
+  "name": "Wider Builders — מכירות",
+  "short_name": "Wider",
   "description": "מערכת ניהול לידים ויעדי מכירות",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1D9E75",
-  "theme_color": "#1D9E75",
+  "background_color": "#26332C",
+  "theme_color": "#26332C",
   "orientation": "portrait",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
