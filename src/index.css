@@ -34,9 +34,9 @@ body{
 .h-sub{font-size:11px;opacity:.65;margin-top:3px}
 .h-prog{background:rgba(255,255,255,.2);border-radius:2px;height:3px;margin-top:8px}
 .h-fill{background:#fff;height:3px;border-radius:2px;transition:width .5s}
-.h-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin-top:10px;background:rgba(255,255,255,.12);border-radius:10px;overflow:hidden}
+.h-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;margin-top:10px;background:rgba(255,255,255,.12);border-radius:10px;overflow:hidden}
 .h-cell{padding:8px 6px;text-align:center;background:rgba(255,255,255,.08)}
-.h-cell-n{font-size:15px;font-weight:600}
+.h-cell-n{font-size:13px;font-weight:600}
 .h-cell-l{font-size:10px;opacity:.7;margin-top:1px}
 
 /* ===== BODY ===== */
@@ -174,5 +174,6 @@ body{
 .meeting-badge{background:#E8F5EF;color:#1D9E75}
 .task-check{width:18px;height:18px;border-radius:50%;border:1.5px solid #D0D0D0;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px}
 .task-check.done{background:#185FA5;border-color:#185FA5}
+
 
 
