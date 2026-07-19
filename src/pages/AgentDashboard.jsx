@@ -9,6 +9,7 @@ import CalendarView from './CalendarView'
 import ReceiptsView from './ReceiptsView'
 
 const fmtK=(n)=>{const v=Number(n||0);return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}K`:`$${v}`}
+const fmtFull=(n)=>`$${Number(n||0).toLocaleString()}`
 const fmt=(n)=>n?`$${Number(n).toLocaleString()}`:'—'
 const daysSince=(d)=>d?Math.floor((Date.now()-new Date(d).getTime())/86400000):null
 
@@ -26,12 +27,30 @@ export default function AgentDashboard({session}){
   const [schedLead,setSchedLead]=useState(null)
   const [showQuickEvent,setShowQuickEvent]=useState(false)
   const [triggerReceiptUpload,setTriggerReceiptUpload]=useState(0)
+  const [upcomingEvents,setUpcomingEvents]=useState([])
 
   const load=async()=>{
     const {data:{user}}=await supabase.auth.getUser()
     const [l,p]=await Promise.all([getMyLeads(),getMyPerformance()])
     const {data:ag}=await supabase.from('agents').select('*').eq('id',user.id).single()
     setLeads(l||[]);setPerf(p);setAgent(ag)
+
+    // Fetch upcoming tasks and meetings for home screen
+    const now=new Date()
+    const weekAhead=new Date(now);weekAhead.setDate(weekAhead.getDate()+7)
+    const [{data:tasks},{data:meetings}]=await Promise.all([
+      supabase.from('tasks').select('*').eq('agent_id',user.id).eq('done',false)
+        .gte('due_datetime',now.toISOString()).lte('due_datetime',weekAhead.toISOString())
+        .order('due_datetime',{ascending:true}).limit(5),
+      supabase.from('meetings').select('*').eq('agent_id',user.id)
+        .gte('visit_datetime',now.toISOString()).lte('visit_datetime',weekAhead.toISOString())
+        .order('visit_datetime',{ascending:true}).limit(5)
+    ])
+    const combined=[
+      ...(tasks||[]).map(t=>({...t,_type:'task',_time:new Date(t.due_datetime)})),
+      ...(meetings||[]).map(m=>({...m,_type:'meeting',_time:new Date(m.visit_datetime)})),
+    ].sort((a,b)=>a._time-b._time)
+    setUpcomingEvents(combined)
   }
   useEffect(()=>{load()},[])
 
@@ -44,6 +63,7 @@ export default function AgentDashboard({session}){
   const mLeft=12-new Date().getMonth()
 
   const stale=leads.filter(l=>(daysSince(l.last_contact_at||l.updated_at)||0)>=7&&!['completed','closed_lost','frozen','closed_won'].includes(l.stage))
+  const pipelineValue=leads.filter(l=>['incoming_call','in_progress','proposal_sent'].includes(l.stage)).reduce((s,l)=>s+Number(l.estimated_value||0),0)
   const todayM=leads.filter(l=>l.visit_datetime&&new Date(l.visit_datetime).toDateString()===new Date().toDateString())
   const active=leads.filter(l=>!['completed','closed_lost','frozen'].includes(l.stage))
   const fresh=active.filter(l=>(daysSince(l.last_contact_at||l.updated_at)||0)<7)
@@ -69,12 +89,13 @@ export default function AgentDashboard({session}){
           <button className="h-btn" onClick={()=>supabase.auth.signOut()}>⎋</button>
         </div>
         {agent&&<>
-          <div className="h-amt">{fmtK(total)}</div>
-          <div className="h-sub">מתוך {fmtK(annual)} · נשארו {mLeft} חודשים · {annPct}%</div>
+          <div className="h-amt">{fmtFull(total)}</div>
+          <div className="h-sub">מתוך {fmtFull(annual)} · נשארו {mLeft} חודשים · {annPct}%</div>
           <div className="h-prog"><div className="h-fill" style={{width:annPct+'%'}}/></div>
           <div className="h-grid">
-            <div className="h-cell"><div className="h-cell-n">{fmtK(monthly)}</div><div className="h-cell-l">יעד חודשי</div></div>
-            <div className="h-cell"><div className="h-cell-n">{fmt(won)}</div><div className="h-cell-l">הושג</div></div>
+            <div className="h-cell"><div className="h-cell-n">{fmtFull(monthly)}</div><div className="h-cell-l">יעד חודשי</div></div>
+            <div className="h-cell"><div className="h-cell-n">{fmtFull(won)}</div><div className="h-cell-l">הושג</div></div>
+            <div className="h-cell"><div className="h-cell-n" style={{color:pipelineValue>0?'#9FE1CB':'rgba(255,255,255,.4)'}}>{fmtFull(pipelineValue)}</div><div className="h-cell-l">פייפליין</div></div>
             <div className="h-cell"><div className="h-cell-n" style={{color:todayM.length>0?'#9FE1CB':'rgba(255,255,255,.4)'}}>{todayM.length}</div><div className="h-cell-l">פגישות היום</div></div>
           </div>
         </>}
@@ -118,9 +139,23 @@ export default function AgentDashboard({session}){
           {stale.map(l=><LeadCard key={l.id} lead={l} onUpdate={load} onSchedule={setSchedLead}/>)}
         </>}
 
-        {fresh.length>0&&<>
-          <div className="sec-hdr">לידים פעילים</div>
-          {fresh.map(l=><LeadCard key={l.id} lead={l} onUpdate={load} onSchedule={setSchedLead}/>)}
+        {stale.length===0&&leads.filter(l=>!['completed','closed_lost','frozen'].includes(l.stage)).length>0&&(
+          <div className="empty"><div className="empty-sub" style={{color:'#1D9E75'}}>✓ כל הלידים מטופלים</div></div>
+        )}
+
+        {upcomingEvents.length>0&&<>
+          <div className="sec-hdr">אירועים קרובים</div>
+          {upcomingEvents.map(ev=>(
+            <div key={ev.id} style={{background:'#fff',margin:'0 12px 6px',borderRadius:14,padding:'11px 14px',display:'flex',alignItems:'center',gap:10}}>
+              <div style={{width:3,borderRadius:2,alignSelf:'stretch',background:ev._type==='task'?'#185FA5':'#1D9E75'}}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a'}}>{ev._type==='task'?ev.title:ev.title||'פגישה'}</div>
+                <div style={{fontSize:11,color:'#8E8E93',marginTop:1}}>
+                  {ev._type==='task'?'✓ משימה':'📅 פגישה'} · {new Date(ev._time).toLocaleDateString('he-IL',{weekday:'short',month:'short',day:'numeric'})} {new Date(ev._time).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}
+                </div>
+              </div>
+            </div>
+          ))}
         </>}
 
         {leads.length===0&&(
@@ -189,6 +224,7 @@ export default function AgentDashboard({session}){
     </div>
   )
 }
+
 
 
 
