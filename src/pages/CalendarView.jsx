@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { supabase, getTasks, toggleTask } from '../lib/supabase'
+import { supabase, getTasks, toggleTask, addTask } from '../lib/supabase'
 import AddEventModal from '../components/AddEventModal'
 import Icon from '../components/Icon'
+import { TaskItem, QuickAddTask } from '../components/Tasks'
 
 const HE_DAYS = ['א','ב','ג','ד','ה','ו','ש']
 const HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
@@ -52,7 +53,8 @@ function EventRow({ item, onToggleTask }) {
   )
 }
 
-export default function CalendarView({ agentId }) {
+export default function CalendarView({ agentId, initialMainView }) {
+  const [mainView, setMainView] = useState(initialMainView || 'calendar')
   const [view, setView] = useState('week')
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date()))
@@ -60,6 +62,7 @@ export default function CalendarView({ agentId }) {
   const [leads, setLeads] = useState([])
   const [tasks, setTasks] = useState([])
   const [showAdd, setShowAdd] = useState(false)
+  const [showDone, setShowDone] = useState(false)
 
   const load = async () => {
     const { data: leadData } = await supabase.from('leads').select('*').eq('agent_id', agentId).not('visit_datetime', 'is', null)
@@ -74,7 +77,7 @@ export default function CalendarView({ agentId }) {
   // Combine all events for selected date
   const eventsForDay = (date) => {
     const dayMeetings = leads.filter(l => sameDay(new Date(l.visit_datetime), date)).map(l => ({ ...l, _type:'meeting', _time: new Date(l.visit_datetime) }))
-    const dayTasks = tasks.filter(t => sameDay(new Date(t.due_datetime), date)).map(t => ({ ...t, _type:'task', _time: new Date(t.due_datetime) }))
+    const dayTasks = tasks.filter(t => t.due_datetime && sameDay(new Date(t.due_datetime), date)).map(t => ({ ...t, _type:'task', _time: new Date(t.due_datetime) }))
     return [...dayMeetings, ...dayTasks].sort((a,b) => a._time - b._time)
   }
 
@@ -113,10 +116,47 @@ export default function CalendarView({ agentId }) {
     load()
   }
 
+  const addCalTask = async ({ title, due_datetime }) => {
+    await addTask({ title, due_datetime })
+    load()
+  }
+
+  // Task list buckets (tasks state holds all of the agent's tasks)
+  const openUndated = tasks.filter(t => !t.done && !t.due_datetime)
+  const openDated = tasks.filter(t => !t.done && t.due_datetime)
+  const doneTasks = tasks.filter(t => t.done)
+
   return (
     <div className="body" dir="rtl">
       {showAdd && <AddEventModal agentId={agentId} defaultDate={selectedDate} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
 
+      {/* Main toggle: task list vs calendar */}
+      <div className="seg">
+        <button className={mainView==='tasks'?'on':''} onClick={() => setMainView('tasks')}>משימות</button>
+        <button className={mainView==='calendar'?'on':''} onClick={() => setMainView('calendar')}>לוח שנה</button>
+      </div>
+
+      {mainView === 'tasks' && (
+        <div style={{ paddingTop: 4 }}>
+          <QuickAddTask onAdd={addCalTask} allowDate placeholder="הוסף משימה…" />
+          {openUndated.length === 0 && openDated.length === 0 && (
+            <div className="task-empty">אין משימות פתוחות — הוסף אחת למעלה</div>
+          )}
+          {openUndated.length > 0 && <div className="sec-hdr">ללא תאריך</div>}
+          {openUndated.map(t => <TaskItem key={t.id} task={t} onToggle={toggleTaskDone} />)}
+          {openDated.length > 0 && <div className="sec-hdr">מתוזמנות</div>}
+          {openDated.map(t => <TaskItem key={t.id} task={t} onToggle={toggleTaskDone} />)}
+          {doneTasks.length > 0 && (
+            <div className="sec-hdr" style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span>בוצע · {doneTasks.length}</span>
+              <span onClick={() => setShowDone(s => !s)} style={{ cursor:'pointer', color:'var(--ink3)' }}>{showDone ? 'הסתר' : 'הצג'}</span>
+            </div>
+          )}
+          {showDone && doneTasks.map(t => <TaskItem key={t.id} task={t} onToggle={toggleTaskDone} />)}
+        </div>
+      )}
+
+      {mainView === 'calendar' && <>
       {/* View toggle */}
       <div style={{ display:'flex', background:'rgba(0,0,0,.03)', borderRadius:10, padding:3, margin:'10px 12px' }}>
         <button onClick={() => setView('week')}
@@ -250,6 +290,7 @@ export default function CalendarView({ agentId }) {
         <Icon name="plus" size={18} style={{ stroke:'#fff' }}/>
         הוסף ליומן
       </button>
+      </>}
     </div>
   )
 }
