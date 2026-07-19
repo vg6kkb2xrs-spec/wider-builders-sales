@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, getTasks, toggleTask } from '../lib/supabase'
 import AddEventModal from '../components/AddEventModal'
+import Icon from '../components/Icon'
 
 const HE_DAYS = ['א','ב','ג','ד','ה','ו','ש']
 const HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
@@ -39,7 +40,7 @@ function EventRow({ item, onToggleTask }) {
   return (
     <div className="event-item-row">
       <div className="event-bar-meeting"/>
-      <div style={{ fontSize:13, fontWeight:600, color:'var(--text,#1a1a1a)', minWidth:42 }}>
+      <div style={{ fontSize:13, fontWeight:600, color:'var(--ink)', minWidth:42 }}>
         {new Date(item.visit_datetime).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}
       </div>
       <div style={{ flex:1 }}>
@@ -120,36 +121,36 @@ export default function CalendarView({ agentId }) {
       <div style={{ display:'flex', background:'rgba(0,0,0,.03)', borderRadius:10, padding:3, margin:'10px 12px' }}>
         <button onClick={() => setView('week')}
           style={{ flex:1, padding:'7px', fontSize:12, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
-            background: view==='week' ? '#1D9E75' : 'none', color: view==='week' ? '#fff' : '#8E8E93' }}>
+            background: view==='week' ? 'var(--accent)' : 'none', color: view==='week' ? '#fff' : 'var(--ink2)' }}>
           שבועי
         </button>
         <button onClick={() => setView('month')}
           style={{ flex:1, padding:'7px', fontSize:12, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
-            background: view==='month' ? '#1D9E75' : 'none', color: view==='month' ? '#fff' : '#8E8E93' }}>
+            background: view==='month' ? 'var(--accent)' : 'none', color: view==='month' ? '#fff' : 'var(--ink2)' }}>
           חודשי
         </button>
         <button onClick={() => setView('day')}
           style={{ flex:1, padding:'7px', fontSize:12, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
-            background: view==='day' ? '#1D9E75' : 'none', color: view==='day' ? '#fff' : '#8E8E93' }}>
+            background: view==='day' ? 'var(--accent)' : 'none', color: view==='day' ? '#fff' : 'var(--ink2)' }}>
           יומי
         </button>
       </div>
 
       {view === 'week' && view !== 'day' && (
-        <div style={{ display:'flex', justifyContent:'space-between', padding:'4px 12px 10px', background:'var(--card,#fff)' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', padding:'4px 12px 10px', background:'var(--card)' }}>
           {weekDays.map((d,i) => {
             const selected = sameDay(d, selectedDate)
             const today = sameDay(d, new Date())
             return (
               <div key={i} onClick={() => setSelectedDate(d)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, cursor:'pointer', flex:1 }}>
-                <div style={{ fontSize:10, color:'#8E8E93' }}>{HE_DAYS[d.getDay()]}</div>
+                <div style={{ fontSize:10, color:'var(--ink2)' }}>{HE_DAYS[d.getDay()]}</div>
                 <div style={{
                   width:30, height:30, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:14, fontWeight:500, color: today ? '#fff' : 'var(--text,#1a1a1a)',
-                  background: today ? '#1D9E75' : 'transparent',
-                  border: selected && !today ? '1.5px solid #1D9E75' : 'none',
+                  fontSize:14, fontWeight:500, color: today ? '#fff' : 'var(--ink)',
+                  background: today ? 'var(--accent)' : 'transparent',
+                  border: selected && !today ? '1.5px solid var(--accent)' : 'none',
                 }}>{d.getDate()}</div>
-                <div style={{ width:4, height:4, borderRadius:'50%', background: hasEvents(d) ? '#1D9E75' : 'transparent' }}/>
+                <div style={{ width:4, height:4, borderRadius:'50%', background: hasEvents(d) ? 'var(--accent)' : 'transparent' }}/>
               </div>
             )
           })}
@@ -157,16 +158,16 @@ export default function CalendarView({ agentId }) {
       )}
 
       {view === 'month' && view !== 'day' && (
-        <div style={{ background:'var(--card,#fff)' }}>
+        <div style={{ background:'var(--card)' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'4px 12px' }}>
             <button onClick={() => setMonthDate(d => { const n = new Date(d); n.setMonth(n.getMonth()-1); return n })}
-              style={{ background:'none', border:'none', fontSize:18, color:'#1D9E75', cursor:'pointer' }}>‹</button>
+              style={{ background:'none', border:'none', fontSize:18, color:'var(--accent)', cursor:'pointer' }}>‹</button>
             <div style={{ fontSize:14, fontWeight:600 }}>{HE_MONTHS[monthDate.getMonth()]} {monthDate.getFullYear()}</div>
             <button onClick={() => setMonthDate(d => { const n = new Date(d); n.setMonth(n.getMonth()+1); return n })}
-              style={{ background:'none', border:'none', fontSize:18, color:'#1D9E75', cursor:'pointer' }}>›</button>
+              style={{ background:'none', border:'none', fontSize:18, color:'var(--accent)', cursor:'pointer' }}>›</button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'8px 12px 0' }}>
-            {HE_DAYS.map(d => <div key={d} style={{ fontSize:9, color:'#8E8E93', fontWeight:600, textAlign:'center' }}>{d}</div>)}
+            {HE_DAYS.map(d => <div key={d} style={{ fontSize:9, color:'var(--ink2)', fontWeight:600, textAlign:'center' }}>{d}</div>)}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4, padding:'6px 12px 12px' }}>
             {monthGrid().map((cell, i) => {
@@ -176,13 +177,13 @@ export default function CalendarView({ agentId }) {
                 <div key={i} onClick={() => setSelectedDate(cell.date)} style={{
                   aspectRatio:'1', display:'flex', alignItems:'center', justifyContent:'center',
                   fontSize:11, borderRadius:8, cursor:'pointer', position:'relative',
-                  color: cell.other ? '#D0D0D0' : today ? '#fff' : 'var(--text,#1a1a1a)',
-                  background: today ? '#1D9E75' : selected ? '#E8F5EF' : 'transparent',
+                  color: cell.other ? 'var(--ink3)' : today ? '#fff' : 'var(--ink)',
+                  background: today ? 'var(--accent)' : selected ? 'var(--accent-soft)' : 'transparent',
                   fontWeight: today ? 700 : 400,
                 }}>
                   {cell.day}
                   {hasEvents(cell.date) && !cell.other && (
-                    <div style={{ width:4, height:4, borderRadius:'50%', position:'absolute', bottom:2, background: today ? '#fff' : '#1D9E75' }}/>
+                    <div style={{ width:4, height:4, borderRadius:'50%', position:'absolute', bottom:2, background: today ? '#fff' : 'var(--accent)' }}/>
                   )}
                 </div>
               )
@@ -193,19 +194,19 @@ export default function CalendarView({ agentId }) {
 
       {/* DAY VIEW - with date nav and separated sections */}
       {view === 'day' && (
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 14px 10px', background:'var(--card,#fff)' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 14px 10px', background:'var(--card)' }}>
           <button onClick={() => setSelectedDate(d => { const n = new Date(d); n.setDate(n.getDate()-1); return n })}
-            style={{ background:'none', border:'none', fontSize:20, color:'#1D9E75', cursor:'pointer', padding:'4px 10px' }}>‹</button>
+            style={{ background:'none', border:'none', fontSize:20, color:'var(--accent)', cursor:'pointer', padding:'4px 10px' }}>‹</button>
           <div style={{ textAlign:'center' }}>
-            <div style={{ fontSize:15, fontWeight:700, color:'var(--text,#1a1a1a)' }}>
+            <div style={{ fontSize:15, fontWeight:700, color:'var(--ink)' }}>
               {isToday ? 'היום' : selectedDate.toLocaleDateString('he-IL', { weekday:'long' })}
             </div>
-            <div style={{ fontSize:12, color:'#8E8E93', marginTop:1 }}>
+            <div style={{ fontSize:12, color:'var(--ink2)', marginTop:1 }}>
               {selectedDate.toLocaleDateString('he-IL', { day:'numeric', month:'long' })}
             </div>
           </div>
           <button onClick={() => setSelectedDate(d => { const n = new Date(d); n.setDate(n.getDate()+1); return n })}
-            style={{ background:'none', border:'none', fontSize:20, color:'#1D9E75', cursor:'pointer', padding:'4px 10px' }}>›</button>
+            style={{ background:'none', border:'none', fontSize:20, color:'var(--accent)', cursor:'pointer', padding:'4px 10px' }}>›</button>
         </div>
       )}
 
@@ -218,17 +219,17 @@ export default function CalendarView({ agentId }) {
 
       {view === 'day' ? (
         <>
-          <div className="sec-hdr" style={{ color:'#1D9E75' }}>📅 פגישות</div>
+          <div className="sec-hdr" style={{ color:'var(--accent-deep)' }}>פגישות</div>
           {todayEvents.filter(e => e._type === 'meeting').length === 0 && (
-            <div style={{ padding:'0 14px 8px', fontSize:12, color:'#8E8E93' }}>אין פגישות ביום זה</div>
+            <div style={{ padding:'0 14px 8px', fontSize:12, color:'var(--ink2)' }}>אין פגישות ביום זה</div>
           )}
           {todayEvents.filter(e => e._type === 'meeting').map(item => (
             <EventRow key={item._type+item.id} item={item} onToggleTask={toggleTaskDone} />
           ))}
 
-          <div className="sec-hdr" style={{ color:'#185FA5', marginTop:6 }}>✓ משימות ותזכורות</div>
+          <div className="sec-hdr" style={{ color:'var(--ink2)', marginTop:6 }}>משימות ותזכורות</div>
           {todayEvents.filter(e => e._type === 'task').length === 0 && (
-            <div style={{ padding:'0 14px 8px', fontSize:12, color:'#8E8E93' }}>אין משימות ביום זה</div>
+            <div style={{ padding:'0 14px 8px', fontSize:12, color:'var(--ink2)' }}>אין משימות ביום זה</div>
           )}
           {todayEvents.filter(e => e._type === 'task').map(item => (
             <EventRow key={item._type+item.id} item={item} onToggleTask={toggleTaskDone} />
@@ -246,7 +247,7 @@ export default function CalendarView({ agentId }) {
       )}
 
       <button className="add-btn" onClick={() => setShowAdd(true)}>
-        <i className="ti ti-plus" style={{ fontSize:16 }} aria-hidden="true"/>
+        <Icon name="plus" size={18} style={{ stroke:'#fff' }}/>
         הוסף ליומן
       </button>
     </div>

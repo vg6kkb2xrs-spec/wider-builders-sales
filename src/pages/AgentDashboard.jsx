@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import AddLeadModal from '../components/AddLeadModal'
 import AddEventModal from '../components/AddEventModal'
 import LeadCard from '../components/LeadCard'
+import Icon from '../components/Icon'
 import CashflowView from './CashflowView'
 import CalendarView from './CalendarView'
 import ReceiptsView from './ReceiptsView'
@@ -86,7 +87,7 @@ export default function AgentDashboard({session}){
       <div className="h">
         <div className="h-top">
           <div><div className="h-name">שלום, {agentName}</div><div className="h-date">{new Date().toLocaleDateString('he-IL',{weekday:'long',month:'long',day:'numeric'})}</div></div>
-          <button className="h-btn" onClick={()=>supabase.auth.signOut()}>⎋</button>
+          <button className="h-btn" onClick={()=>supabase.auth.signOut()} aria-label="יציאה"><Icon name="power" size={16}/></button>
         </div>
         {agent&&<>
           <div className="h-amt">{fmtFull(total)}</div>
@@ -95,28 +96,22 @@ export default function AgentDashboard({session}){
           <div className="h-grid">
             <div className="h-cell"><div className="h-cell-n">{fmtFull(monthly)}</div><div className="h-cell-l">יעד חודשי</div></div>
             <div className="h-cell"><div className="h-cell-n">{fmtFull(won)}</div><div className="h-cell-l">הושג</div></div>
-            <div className="h-cell"><div className="h-cell-n" style={{color:pipelineValue>0?'#9FE1CB':'rgba(255,255,255,.4)'}}>{fmtFull(pipelineValue)}</div><div className="h-cell-l">פייפליין</div></div>
-            <div className="h-cell"><div className="h-cell-n" style={{color:todayM.length>0?'#9FE1CB':'rgba(255,255,255,.4)'}}>{todayM.length}</div><div className="h-cell-l">פגישות היום</div></div>
+            <div className="h-cell"><div className="h-cell-n" style={{opacity:pipelineValue>0?1:.45}}>{fmtFull(pipelineValue)}</div><div className="h-cell-l">פייפליין</div></div>
+            <div className="h-cell"><div className="h-cell-n" style={{opacity:todayM.length>0?1:.45}}>{todayM.length}</div><div className="h-cell-l">פגישות היום</div></div>
           </div>
         </>}
       </div>
 
-      {/* QUICK ACTIONS */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, margin:'10px 12px 0' }}>
-        <button onClick={()=>{setTab('cashflow');setFinanceView('receipts');setTriggerReceiptUpload(n=>n+1)}}
-          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'12px 6px', background:'#fff', border:'1.5px solid #E5E5EA', borderRadius:14, cursor:'pointer' }}>
-          <i className="ti ti-receipt" style={{ fontSize:22, color:'#1D9E75' }} aria-hidden="true"/>
-          <span style={{ fontSize:11, fontWeight:600, color:'#1a1a1a' }}>הוסף קבלה</span>
+      {/* QUICK ACTIONS — quiet, monochrome */}
+      <div className="qa-row">
+        <button className="qa-btn" onClick={()=>{setTab('cashflow');setFinanceView('receipts');setTriggerReceiptUpload(n=>n+1)}}>
+          <Icon name="receipt"/><span>הוסף קבלה</span>
         </button>
-        <button onClick={()=>setShowQuickEvent(true)}
-          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'12px 6px', background:'#fff', border:'1.5px solid #E5E5EA', borderRadius:14, cursor:'pointer' }}>
-          <i className="ti ti-calendar-plus" style={{ fontSize:22, color:'#185FA5' }} aria-hidden="true"/>
-          <span style={{ fontSize:11, fontWeight:600, color:'#1a1a1a' }}>הוסף פגישה</span>
+        <button className="qa-btn" onClick={()=>setShowQuickEvent(true)}>
+          <Icon name="calendar-plus"/><span>הוסף פגישה</span>
         </button>
-        <button onClick={()=>setShowAdd(true)}
-          style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'12px 6px', background:'#fff', border:'1.5px solid #E5E5EA', borderRadius:14, cursor:'pointer' }}>
-          <i className="ti ti-phone-incoming" style={{ fontSize:22, color:'#E24B4A' }} aria-hidden="true"/>
-          <span style={{ fontSize:11, fontWeight:600, color:'#1a1a1a' }}>הוסף ליד</span>
+        <button className="qa-btn" onClick={()=>setShowAdd(true)}>
+          <Icon name="phone"/><span>הוסף ליד</span>
         </button>
       </div>
 
@@ -135,23 +130,23 @@ export default function AgentDashboard({session}){
         )}
 
         {stale.length>0&&<>
-          <div className="sec-hdr" style={{color:'#E24B4A'}}>⚠ דורש טיפול</div>
+          <div className="sec-hdr" style={{color:'var(--alert-deep)'}}>דורש טיפול · {stale.length}</div>
           {stale.map(l=><LeadCard key={l.id} lead={l} onUpdate={load} onSchedule={setSchedLead}/>)}
         </>}
 
         {stale.length===0&&leads.filter(l=>!['completed','closed_lost','frozen'].includes(l.stage)).length>0&&(
-          <div className="empty"><div className="empty-sub" style={{color:'#1D9E75'}}>✓ כל הלידים מטופלים</div></div>
+          <div className="empty"><div className="empty-sub" style={{color:'var(--accent-deep)',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}><Icon name="check" size={16}/> כל הלידים מטופלים</div></div>
         )}
 
         {upcomingEvents.length>0&&<>
           <div className="sec-hdr">אירועים קרובים</div>
           {upcomingEvents.map(ev=>(
-            <div key={ev.id} style={{background:'#fff',margin:'0 12px 6px',borderRadius:14,padding:'11px 14px',display:'flex',alignItems:'center',gap:10}}>
-              <div style={{width:3,borderRadius:2,alignSelf:'stretch',background:ev._type==='task'?'#185FA5':'#1D9E75'}}/>
+            <div key={ev.id} className="event-item-row" style={{cursor:'default'}}>
+              <div className="event-bar-meeting" style={{background:ev._type==='task'?'var(--ink3)':'var(--accent)'}}/>
               <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:600,color:'#1a1a1a'}}>{ev._type==='task'?ev.title:ev.title||'פגישה'}</div>
-                <div style={{fontSize:11,color:'#8E8E93',marginTop:1}}>
-                  {ev._type==='task'?'✓ משימה':'📅 פגישה'} · {new Date(ev._time).toLocaleDateString('he-IL',{weekday:'short',month:'short',day:'numeric'})} {new Date(ev._time).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}
+                <div className="event-title-text">{ev._type==='task'?ev.title:ev.title||'פגישה'}</div>
+                <div className="event-sub-text">
+                  {ev._type==='task'?'משימה':'פגישה'} · {new Date(ev._time).toLocaleDateString('he-IL',{weekday:'short',month:'short',day:'numeric'})} {new Date(ev._time).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}
                 </div>
               </div>
             </div>
@@ -171,17 +166,9 @@ export default function AgentDashboard({session}){
       {/* MEETINGS */}
       {tab==='cashflow'&&(
         <>
-          <div style={{ display:'flex', background:'rgba(0,0,0,.03)', borderRadius:10, padding:3, margin:'10px 12px 0' }}>
-            <button onClick={()=>setFinanceView('cashflow')}
-              style={{ flex:1, padding:'8px', fontSize:12, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
-                background: financeView==='cashflow' ? '#185FA5' : 'none', color: financeView==='cashflow' ? '#fff' : '#8E8E93' }}>
-              💰 תזרים
-            </button>
-            <button onClick={()=>setFinanceView('receipts')}
-              style={{ flex:1, padding:'8px', fontSize:12, fontWeight:600, border:'none', borderRadius:8, cursor:'pointer',
-                background: financeView==='receipts' ? '#1D9E75' : 'none', color: financeView==='receipts' ? '#fff' : '#8E8E93' }}>
-              📄 קבלות
-            </button>
+          <div className="seg">
+            <button className={financeView==='cashflow'?'on':''} onClick={()=>setFinanceView('cashflow')}>תזרים</button>
+            <button className={financeView==='receipts'?'on':''} onClick={()=>setFinanceView('receipts')}>קבלות</button>
           </div>
           {financeView==='cashflow' ? <CashflowView isManager={false}/> : <ReceiptsView isManager={false} autoTriggerUpload={triggerReceiptUpload}/>}
         </>
@@ -205,16 +192,16 @@ export default function AgentDashboard({session}){
       {/* BOTTOM NAV */}
       <nav className="nav">
         <button className={`nb ${tab==='home'?'on':''}`} onClick={()=>setTab('home')}>
-          <div className="nb-icon"><i className="ti ti-home" aria-hidden="true"/></div>בית
+          <div className="nb-icon"><Icon name="home" size={22}/></div>בית
         </button>
         <button className={`nb ${tab==='cashflow'?'on':''}`} onClick={()=>setTab('cashflow')}>
-          <div className="nb-icon"><i className="ti ti-cash" aria-hidden="true"/></div>תזרים
+          <div className="nb-icon"><Icon name="cash" size={22}/></div>תזרים
         </button>
         <button className={`nb ${tab==='calendar'?'on':''}`} onClick={()=>setTab('calendar')}>
-          <div className="nb-icon"><i className="ti ti-calendar" aria-hidden="true"/></div>יומן
+          <div className="nb-icon"><Icon name="calendar" size={22}/></div>יומן
         </button>
         <button className={`nb ${tab==='leads'?'on':''}`} onClick={()=>setTab('leads')}>
-          <div className="nb-icon"><i className="ti ti-list" aria-hidden="true"/></div>לידים
+          <div className="nb-icon"><Icon name="list" size={22}/></div>לידים
         </button>
       </nav>
 

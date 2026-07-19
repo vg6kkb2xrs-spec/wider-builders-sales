@@ -124,7 +124,7 @@ function ReviewModal({ scanned, fileUrl, leads, sheetId, onClose, onSaved }) {
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
-        <div style={{ background:'#E8F5EF', border:'1px solid #9FE1CB', borderRadius:12, padding:'8px 12px', marginBottom:14, fontSize:12, color:'#1D9E75', fontWeight:600 }}>
+        <div style={{ background:'var(--accent-soft)', border:'1px solid var(--accent)', borderRadius:12, padding:'8px 12px', marginBottom:14, fontSize:12, color:'var(--accent-deep)', fontWeight:600 }}>
           ✓ זוהה אוטומטית — בדוק ותקן במידת הצורך
         </div>
 
@@ -152,7 +152,7 @@ function ReviewModal({ scanned, fileUrl, leads, sheetId, onClose, onSaved }) {
 
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
           <input type="checkbox" id="billable" checked={form.billable} onChange={e => setForm(f => ({...f, billable: e.target.checked}))} style={{ width:18, height:18 }} />
-          <label htmlFor="billable" style={{ fontSize:13, color:'#1a1a1a' }}>Billable (ניתן לחיוב הלקוח)</label>
+          <label htmlFor="billable" style={{ fontSize:13, color:'var(--ink)' }}>Billable (ניתן לחיוב הלקוח)</label>
         </div>
 
         <div className="field">
@@ -250,7 +250,7 @@ function EditReceiptModal({ receipt, leads, sheetId, onClose, onSaved, onDeleted
 
         {receipt.file_url && (
           <a href={receipt.file_url} target="_blank" rel="noopener noreferrer"
-            style={{ display:'block', fontSize:13, color:'#185FA5', marginBottom:14, textDecoration:'underline' }}>
+            style={{ display:'block', fontSize:13, color:'var(--ink2)', marginBottom:14, textDecoration:'underline' }}>
             📄 צפה בקובץ המקורי
           </a>
         )}
@@ -279,7 +279,7 @@ function EditReceiptModal({ receipt, leads, sheetId, onClose, onSaved, onDeleted
 
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
           <input type="checkbox" id="edit_billable" checked={form.billable} onChange={e => setForm(f => ({...f, billable: e.target.checked}))} style={{ width:18, height:18 }} />
-          <label htmlFor="edit_billable" style={{ fontSize:13, color:'#1a1a1a' }}>Billable (ניתן לחיוב הלקוח)</label>
+          <label htmlFor="edit_billable" style={{ fontSize:13, color:'var(--ink)' }}>Billable (ניתן לחיוב הלקוח)</label>
         </div>
 
         <div className="field">
@@ -298,17 +298,17 @@ function EditReceiptModal({ receipt, leads, sheetId, onClose, onSaved, onDeleted
         {error && <div className="field-error">{error}</div>}
         <button className="submit-btn" onClick={save} disabled={saving}>{saving ? 'שומר...' : 'שמור שינויים'}</button>
         <button onClick={remove} disabled={deleting}
-          style={{ width:'100%', marginTop:8, padding:12, background:'#FFF5F5', color:'#E24B4A', border:'1px solid #F7C1C1', borderRadius:12, fontSize:14, fontWeight:600, cursor:'pointer' }}>
+          style={{ width:'100%', marginTop:8, padding:12, background:'#FFF5F5', color:'var(--alert-deep)', border:'1px solid transparent', borderRadius:12, fontSize:14, fontWeight:600, cursor:'pointer' }}>
           {deleting ? 'מוחק...' : 'מחק קבלה'}
         </button>
 
         {sheetId && receipt.sheet_row && (
-          <div style={{ fontSize:11, color:'#1D9E75', marginTop:10, textAlign:'center' }}>
+          <div style={{ fontSize:11, color:'var(--accent-deep)', marginTop:10, textAlign:'center' }}>
             ✓ שינויים כאן יתעדכנו גם בגיליון Google Sheets
           </div>
         )}
         {sheetId && !receipt.sheet_row && (
-          <div style={{ fontSize:11, color:'#B0B0B0', marginTop:10, textAlign:'center' }}>
+          <div style={{ fontSize:11, color:'var(--ink3)', marginTop:10, textAlign:'center' }}>
             קבלה זו נוצרה לפני חיבור הגיליון — שינויים כאן לא יתעדכנו בו
           </div>
         )}
@@ -438,7 +438,7 @@ export default function ReceiptsView({ isManager, autoTriggerUpload }) {
         />
       )}
 
-      <div style={{ margin:'10px 12px', background:'#1D9E75', borderRadius:16, padding:'16px', color:'#fff' }}>
+      <div style={{ margin:'10px 12px', background:'var(--accent-deep)', borderRadius:16, padding:'16px', color:'#fff' }}>
         <div style={{ fontSize:11, opacity:.75 }}>קבלות וחשבוניות</div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:10 }}>
           <div style={{ background:'rgba(255,255,255,.12)', borderRadius:10, padding:'8px 10px' }}>
@@ -457,20 +457,20 @@ export default function ReceiptsView({ isManager, autoTriggerUpload }) {
         <div onClick={scanning ? undefined : handleUploadTap}
           style={{
             display:'block', borderRadius:14, padding:20, textAlign:'center', cursor: scanning ? 'default' : 'pointer',
-            border: autoTriggerUpload ? '2px solid #1D9E75' : '1.5px dashed #B5D4F4',
-            background: autoTriggerUpload ? '#E1F5EE' : '#E6F1FB',
+            border: autoTriggerUpload ? '2px solid var(--accent-deep)' : '1.5px dashed var(--line)',
+            background: autoTriggerUpload ? 'var(--accent-soft)' : 'var(--line2)',
             boxShadow: autoTriggerUpload ? '0 0 0 3px rgba(29,158,117,.15)' : 'none',
             transition: 'all .2s',
           }}>
           {scanning ? (
             <>
               <div style={{ fontSize:28, marginBottom:6 }}>⏳</div>
-              <div style={{ fontSize:12, color:'#185FA5', fontWeight:600 }}>קורא את הקבלה...</div>
+              <div style={{ fontSize:12, color:'var(--ink2)', fontWeight:600 }}>קורא את הקבלה...</div>
             </>
           ) : (
             <>
               <div style={{ fontSize:28, marginBottom:6 }}>📄</div>
-              <div style={{ fontSize:12, color:'#185FA5', fontWeight:600 }}>
+              <div style={{ fontSize:12, color:'var(--ink2)', fontWeight:600 }}>
                 {autoTriggerUpload ? '👆 לחץ כאן להעלות תמונה או PDF' : 'העלה תמונה או PDF של קבלה'}
               </div>
             </>
@@ -481,7 +481,7 @@ export default function ReceiptsView({ isManager, autoTriggerUpload }) {
 
       <div style={{ margin:'0 12px 10px', textAlign:'center' }}>
         <button onClick={() => setShowSheetSetup(true)}
-          style={{ fontSize:12, color:'#8E8E93', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>
+          style={{ fontSize:12, color:'var(--ink2)', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>
           {sheetId ? '✓ מחובר לגיליון Google Sheets — שנה' : 'חבר גיליון Google Sheets'}
         </button>
       </div>
@@ -491,19 +491,19 @@ export default function ReceiptsView({ isManager, autoTriggerUpload }) {
       {receipts.map(r => (
         <div key={r.id} onClick={() => setEditingReceipt(r)}
           style={{ background:'#fff', margin:'0 12px 6px', borderRadius:14, padding:'11px 13px', display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
-          <div style={{ width:3, borderRadius:2, alignSelf:'stretch', background: (r.transaction_type==='Client Deposit'||r.transaction_type==='Vendor Refund') ? '#1D9E75' : '#E24B4A' }}/>
+          <div style={{ width:3, borderRadius:2, alignSelf:'stretch', background: (r.transaction_type==='Client Deposit'||r.transaction_type==='Vendor Refund') ? 'var(--accent-deep)' : 'var(--alert-deep)' }}/>
           <div style={{ flex:1 }}>
-            <div style={{ fontSize:13, fontWeight:600, color:'#1a1a1a' }}>{r.memo || r.transaction_type}</div>
-            <div style={{ fontSize:11, color:'#8E8E93', marginTop:1, unicodeBidi:'plaintext' }}>
+            <div style={{ fontSize:13, fontWeight:600, color:'var(--ink)' }}>{r.memo || r.transaction_type}</div>
+            <div style={{ fontSize:11, color:'var(--ink2)', marginTop:1, unicodeBidi:'plaintext' }}>
               {r.transaction_type}{r.project_name && ` · ${r.project_name}`}{r.billable && ' · Billable'}
             </div>
           </div>
           <div style={{ textAlign:'left' }}>
-            <div style={{ fontSize:13, fontWeight:700, color: (r.transaction_type==='Client Deposit'||r.transaction_type==='Vendor Refund') ? '#1D9E75' : '#E24B4A' }}>
+            <div style={{ fontSize:13, fontWeight:700, color: (r.transaction_type==='Client Deposit'||r.transaction_type==='Vendor Refund') ? 'var(--accent-deep)' : 'var(--alert-deep)' }}>
               {fmt(r.amount)}
             </div>
             {r.file_url && (
-              <a href={r.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize:10, color:'#185FA5' }} onClick={e => e.stopPropagation()}>
+              <a href={r.file_url} target="_blank" rel="noopener noreferrer" style={{ fontSize:10, color:'var(--ink2)' }} onClick={e => e.stopPropagation()}>
                 צפה בקובץ
               </a>
             )}
