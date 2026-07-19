@@ -164,19 +164,50 @@ export async function getLogs(leadId) {
 
 
 // ===== TASKS =====
+// due_datetime is optional: null = a plain to-do (list only), set = also shows on the calendar.
 export async function getTasks() {
   const { data: { user } } = await supabase.auth.getUser()
   const { data } = await supabase
     .from('tasks')
     .select('*, leads(project_address, client_name)')
     .eq('agent_id', user.id)
-    .order('due_datetime', { ascending: true })
+    .order('due_datetime', { ascending: true, nullsFirst: true })
   return data || []
 }
 
-export async function addTask(title, due_datetime) {
+// Open tasks for the home "today" strip: undated to-dos + anything due today or overdue.
+export async function getTodayTasks() {
   const { data: { user } } = await supabase.auth.getUser()
-  await supabase.from('tasks').insert({ title, due_datetime, agent_id: user.id })
+  const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999)
+  const { data } = await supabase
+    .from('tasks')
+    .select('*, leads(project_address, client_name)')
+    .eq('agent_id', user.id)
+    .eq('done', false)
+    .or(`due_datetime.is.null,due_datetime.lte.${endOfToday.toISOString()}`)
+    .order('due_datetime', { ascending: true, nullsFirst: true })
+  return data || []
+}
+
+// All tasks linked to a specific lead (for the lead detail screen).
+export async function getTasksForLead(leadId) {
+  const { data } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('lead_id', leadId)
+    .order('done', { ascending: true })
+    .order('due_datetime', { ascending: true, nullsFirst: true })
+  return data || []
+}
+
+export async function addTask({ title, due_datetime = null, lead_id = null }) {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert({ title, due_datetime, lead_id, agent_id: user.id })
+    .select().single()
+  if (error) throw error
+  return data
 }
 
 export async function toggleTask(id, done) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { stageInfo, STAGES, updateLeadStage, markContacted, addNote, updateLead, addLog, getLogs } from '../lib/supabase'
+import { stageInfo, STAGES, updateLeadStage, markContacted, addNote, updateLead, addLog, getLogs, getTasksForLead, addTask, toggleTask } from '../lib/supabase'
 import Icon from './Icon'
+import { TaskItem, QuickAddTask } from './Tasks'
 
 const fmt = (n) => n ? `$${Number(n).toLocaleString()}` : null
 const daysSince = (d) => d ? Math.floor((Date.now()-new Date(d).getTime())/86400000) : null
@@ -76,6 +77,7 @@ function DetailScreen({ lead, onBack, onUpdate, onSchedule }) {
   const [saving, setSaving] = useState(false)
   const [logs, setLogs] = useState([])
   const [showLogs, setShowLogs] = useState(true)
+  const [tasks, setTasks] = useState([])
   const [editForm, setEditForm] = useState({
     project_address: lead.project_address,
     client_name: lead.client_name,
@@ -92,9 +94,21 @@ function DetailScreen({ lead, onBack, onUpdate, onSchedule }) {
 
   useEffect(() => {
     getLogs(lead.id).then(setLogs)
+    getTasksForLead(lead.id).then(setTasks)
   }, [lead.id])
 
   const refreshLogs = () => getLogs(lead.id).then(setLogs)
+  const refreshTasks = () => getTasksForLead(lead.id).then(setTasks)
+
+  const addLeadTask = async ({ title, due_datetime }) => {
+    await addTask({ title, due_datetime, lead_id: lead.id })
+    await addLog(lead.id, 'נוספה משימה', title)
+    refreshTasks(); refreshLogs(); onUpdate()
+  }
+  const toggleLeadTask = async (task) => {
+    await toggleTask(task.id, !task.done)
+    refreshTasks()
+  }
 
   const doStage = async (stage) => {
     setSaving(true)
@@ -203,6 +217,11 @@ function DetailScreen({ lead, onBack, onUpdate, onSchedule }) {
               <button className="mb r" onClick={() => { if(confirm('לסמן כאבוד?')) doStage('closed_lost') }}><Icon name="x"/> אבד</button>
             )}
           </div>
+
+          {/* Tasks linked to this lead */}
+          <div className="sec-hdr">משימות{tasks.filter(t=>!t.done).length ? ` · ${tasks.filter(t=>!t.done).length} פתוחות` : ''}</div>
+          {tasks.map(t => <TaskItem key={t.id} task={t} onToggle={toggleLeadTask} showLead={false} />)}
+          <QuickAddTask onAdd={addLeadTask} allowDate placeholder="משימה חדשה לליד…" />
 
           {/* Notes */}
           {lead.lead_notes?.length > 0 && (

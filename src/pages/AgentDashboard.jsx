@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { getMyLeads, getMyPerformance } from '../lib/supabase'
+import { getMyLeads, getMyPerformance, getTodayTasks, addTask, toggleTask } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
 import AddLeadModal from '../components/AddLeadModal'
 import AddEventModal from '../components/AddEventModal'
 import LeadCard from '../components/LeadCard'
 import Icon from '../components/Icon'
+import { TaskItem, QuickAddTask } from '../components/Tasks'
 import CashflowView from './CashflowView'
 import CalendarView from './CalendarView'
 import ReceiptsView from './ReceiptsView'
@@ -29,19 +30,23 @@ export default function AgentDashboard({session}){
   const [showQuickEvent,setShowQuickEvent]=useState(false)
   const [triggerReceiptUpload,setTriggerReceiptUpload]=useState(0)
   const [upcomingEvents,setUpcomingEvents]=useState([])
+  const [todayTasks,setTodayTasks]=useState([])
+  const [calInitTasks,setCalInitTasks]=useState(false)
 
   const load=async()=>{
     const {data:{user}}=await supabase.auth.getUser()
-    const [l,p]=await Promise.all([getMyLeads(),getMyPerformance()])
+    const [l,p,tt]=await Promise.all([getMyLeads(),getMyPerformance(),getTodayTasks()])
     const {data:ag}=await supabase.from('agents').select('*').eq('id',user.id).single()
-    setLeads(l||[]);setPerf(p);setAgent(ag)
+    setLeads(l||[]);setPerf(p);setAgent(ag);setTodayTasks(tt||[])
 
-    // Fetch upcoming tasks and meetings for home screen
+    // "אירועים קרובים": upcoming meetings (from now) + dated tasks from tomorrow onward.
+    // Today's tasks live in the משימות היום section, so exclude them here to avoid duplication.
     const now=new Date()
+    const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);tomorrow.setHours(0,0,0,0)
     const weekAhead=new Date(now);weekAhead.setDate(weekAhead.getDate()+7)
     const [{data:tasks},{data:meetings}]=await Promise.all([
       supabase.from('tasks').select('*').eq('agent_id',user.id).eq('done',false)
-        .gte('due_datetime',now.toISOString()).lte('due_datetime',weekAhead.toISOString())
+        .gte('due_datetime',tomorrow.toISOString()).lte('due_datetime',weekAhead.toISOString())
         .order('due_datetime',{ascending:true}).limit(5),
       supabase.from('meetings').select('*').eq('agent_id',user.id)
         .gte('visit_datetime',now.toISOString()).lte('visit_datetime',weekAhead.toISOString())
@@ -52,6 +57,15 @@ export default function AgentDashboard({session}){
       ...(meetings||[]).map(m=>({...m,_type:'meeting',_time:new Date(m.visit_datetime)})),
     ].sort((a,b)=>a._time-b._time)
     setUpcomingEvents(combined)
+  }
+
+  const addHomeTask=async({title,due_datetime})=>{
+    await addTask({title,due_datetime})
+    getTodayTasks().then(t=>setTodayTasks(t||[]))
+  }
+  const toggleHomeTask=async(task)=>{
+    await toggleTask(task.id,!task.done)
+    getTodayTasks().then(t=>setTodayTasks(t||[]))
   }
   useEffect(()=>{load()},[])
 
@@ -129,6 +143,14 @@ export default function AgentDashboard({session}){
           </div>
         )}
 
+        {/* Today's tasks — morning glance (undated to-dos + due today) */}
+        <div className="sec-hdr" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span>משימות היום</span>
+          <span onClick={()=>{setCalInitTasks(true);setTab('calendar')}} style={{color:'var(--accent-deep)',cursor:'pointer',fontWeight:700}}>כל המשימות ›</span>
+        </div>
+        {todayTasks.map(t=><TaskItem key={t.id} task={t} onToggle={toggleHomeTask}/>)}
+        <QuickAddTask onAdd={addHomeTask} placeholder="הוסף משימה להיום…"/>
+
         {stale.length>0&&<>
           <div className="sec-hdr" style={{color:'var(--alert-deep)'}}>דורש טיפול · {stale.length}</div>
           {stale.map(l=><LeadCard key={l.id} lead={l} onUpdate={load} onSchedule={setSchedLead}/>)}
@@ -173,7 +195,7 @@ export default function AgentDashboard({session}){
           {financeView==='cashflow' ? <CashflowView isManager={false}/> : <ReceiptsView isManager={false} autoTriggerUpload={triggerReceiptUpload}/>}
         </>
       )}
-      {tab==='calendar'&&<CalendarView agentId={session.user.id}/>}
+      {tab==='calendar'&&<CalendarView agentId={session.user.id} initialMainView={calInitTasks?'tasks':'calendar'}/>}
 
       {/* ALL LEADS */}
       {tab==='leads'&&<div className="body">
@@ -197,7 +219,7 @@ export default function AgentDashboard({session}){
         <button className={`nb ${tab==='cashflow'?'on':''}`} onClick={()=>setTab('cashflow')}>
           <div className="nb-icon"><Icon name="cash" size={22}/></div>תזרים
         </button>
-        <button className={`nb ${tab==='calendar'?'on':''}`} onClick={()=>setTab('calendar')}>
+        <button className={`nb ${tab==='calendar'?'on':''}`} onClick={()=>{setCalInitTasks(false);setTab('calendar')}}>
           <div className="nb-icon"><Icon name="calendar" size={22}/></div>יומן
         </button>
         <button className={`nb ${tab==='leads'?'on':''}`} onClick={()=>setTab('leads')}>
