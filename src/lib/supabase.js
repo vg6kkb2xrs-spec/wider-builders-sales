@@ -5,57 +5,60 @@ export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY
 )
 
+/* Stage pills use only meaningful color: in-progress stages stay calm
+   neutral, won/completed read as accent (positive), lost as alert.
+   Values are CSS custom properties so they follow the theme tokens. */
 export const STAGES = [
   {
     key: 'incoming_call',
     label: 'שיחה נכנסת',
-    color: '#185FA5', bg: '#E6F1FB',
+    color: 'var(--ink2)', bg: 'var(--line2)',
     next: 'in_progress',
     nextLabel: 'העבר לטיפול',
-    ctaLabel: '📅 קבע ביקור',
+    ctaLabel: 'קבע ביקור',
     ctaNext: 'in_progress',
   },
   {
     key: 'in_progress',
     label: 'בטיפול',
-    color: '#854F0B', bg: '#FAEEDA',
+    color: 'var(--ink2)', bg: 'var(--line2)',
     next: 'proposal_sent',
     nextLabel: 'שלח למשרד להצעה',
-    ctaLabel: '📋 שלח למשרד להצעה',
+    ctaLabel: 'שלח למשרד להצעה',
     ctaNext: 'proposal_sent',
   },
   {
     key: 'proposal_sent',
     label: 'מחכה לתשובה',
-    color: '#534AB7', bg: '#EEEDFE',
+    color: 'var(--ink2)', bg: 'var(--line2)',
     next: 'closed_won',
     nextLabel: 'הלקוח אישר — נסגר!',
-    ctaLabel: '🎉 הלקוח אישר — נסגר!',
+    ctaLabel: 'הלקוח אישר — נסגר!',
     ctaNext: 'closed_won',
   },
   {
     key: 'closed_won',
     label: 'עובדים אצלו',
-    color: '#0F6E56', bg: '#E1F5EE',
+    color: 'var(--accent-deep)', bg: 'var(--accent-soft)',
     next: 'completed',
     nextLabel: 'סמן כהושלם',
-    ctaLabel: '✅ סמן כהושלם + תשלום סופי',
+    ctaLabel: 'סמן כהושלם + תשלום סופי',
     ctaNext: 'completed',
   },
   {
     key: 'completed',
-    label: 'הושלם ✅',
-    color: '#3B6D11', bg: '#EAF3DE',
+    label: 'הושלם',
+    color: 'var(--accent-deep)', bg: 'var(--accent-soft)',
   },
   {
     key: 'closed_lost',
     label: 'אבוד',
-    color: '#A32D2D', bg: '#FCEBEB',
+    color: 'var(--alert-deep)', bg: 'var(--alert-soft)',
   },
   {
     key: 'frozen',
-    label: '🧊 קפוא',
-    color: '#5F5E5A', bg: '#F1EFE8',
+    label: 'קפוא',
+    color: 'var(--ink3)', bg: 'var(--line2)',
   },
 ]
 
