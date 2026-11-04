@@ -1,76 +1,97 @@
 import { useState } from 'react'
-import { jtVersion, jtCurrentGrant, jtOpenJobs } from '../lib/jobtread'
+import { jtOrg, jtOpenJobs } from '../lib/jobtread'
 
 /*
- * Phase-1 diagnostic for the JobTread bridge (manager-only).
- * Proves the pipe end-to-end and prints RAW responses, so we can read the
- * real Pave schema from the live org and then build the project UI against
- * confirmed field names (instead of guessing).
+ * Projects pulled live from JobTread (manager-only, lives in the Manager
+ * dashboard). Phase 1 = read-only list of open jobs. Query shapes verified
+ * against the live org. Needs JOBTREAD_GRANT_KEY set in Vercel to light up;
+ * until then it shows a friendly "not connected" message.
  */
 export default function JobTreadConnect() {
-  const [status, setStatus] = useState('')
-  const [orgId, setOrgId] = useState('')
-  const [raw, setRaw] = useState('')
-  const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+  const [org, setOrg] = useState(null)
+  const [jobs, setJobs] = useState(null)
+  const [count, setCount] = useState(0)
 
-  const run = async (label, fn) => {
-    setBusy(true); setStatus(label + '…'); setRaw('')
+  const load = async () => {
+    setLoading(true); setErr('')
     try {
-      const res = await fn()
-      setRaw(JSON.stringify(res, null, 2))
-      setStatus('✓ ' + label)
-      return res
+      const o = await jtOrg()
+      setOrg(o)
+      if (!o) { setErr('לא נמצא ארגון'); return }
+      const r = await jtOpenJobs(o.id)
+      const j = r?.organization?.jobs
+      setJobs(j?.nodes || [])
+      setCount(j?.count || 0)
     } catch (e) {
-      setStatus('✗ ' + (e.message || 'שגיאה'))
-      return null
+      setErr(e.message || 'שגיאה')
     } finally {
-      setBusy(false)
+      setLoading(false)
     }
   }
 
-  if (!open) {
-    return (
-      <div className="sec-hdr" onClick={() => setOpen(true)} style={{ cursor: 'pointer', color: 'var(--ink3)' }}>
-        חיבור JobTread · בטא ›
-      </div>
-    )
+  const toggle = () => {
+    const next = !open
+    setOpen(next)
+    if (next && jobs === null && !loading) load()
   }
 
   return (
-    <div className="mgr-card" style={{ marginTop: 10 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--ink3)' }}>
-          חיבור JobTread · בטא
-        </div>
-        <span onClick={() => setOpen(false)} style={{ cursor: 'pointer', color: 'var(--ink3)', fontSize: 12 }}>הסתר</span>
+    <>
+      <div className="sec-hdr" onClick={toggle}
+        style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>פרויקטים · JobTread{count ? ` · ${count}` : ''}</span>
+        <span style={{ color: 'var(--accent-deep)', fontWeight: 700 }}>{open ? 'הסתר' : 'הצג ›'}</span>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        <button className="mb" style={{ flex: 'none', padding: '10px 14px' }} onClick={() => run('בדיקת חיבור', jtVersion)} disabled={busy}>בדוק חיבור</button>
-        <button className="mb" style={{ flex: 'none', padding: '10px 14px' }} disabled={busy}
-          onClick={async () => { const r = await run('זיהוי ארגון', jtCurrentGrant); const id = r?.currentGrant?.organization?.id; if (id) setOrgId(id) }}>
-          זהה ארגון
-        </button>
-        <button className="mb" style={{ flex: 'none', padding: '10px 14px' }} disabled={busy}
-          onClick={() => orgId ? run('משיכת פרויקטים', () => jtOpenJobs(orgId)) : setStatus('קודם זהה ארגון')}>
-          משוך פרויקטים
-        </button>
-      </div>
+      {open && (
+        <>
+          {loading && <div className="task-empty">טוען מ-JobTread…</div>}
 
-      {orgId && <div style={{ fontSize: 12, color: 'var(--ink2)', marginBottom: 8 }}>Org ID: <span className="mono" style={{ direction: 'ltr', unicodeBidi: 'plaintext' }}>{orgId}</span></div>}
-      {status && (
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8,
-          color: status.startsWith('✓') ? 'var(--accent-deep)' : status.startsWith('✗') ? 'var(--alert-deep)' : 'var(--ink2)' }}>
-          {status}
-        </div>
+          {err && (
+            <div className="mgr-card">
+              <div style={{ fontSize: 13, color: 'var(--alert-deep)', fontWeight: 600, marginBottom: 6 }}>
+                לא ניתן למשוך פרויקטים
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--ink2)' }}>{err}</div>
+              {/connected|configured|grant/i.test(err) && (
+                <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 8 }}>
+                  צריך להוסיף את <span className="mono">JOBTREAD_GRANT_KEY</span> במשתני הסביבה ב-Vercel.
+                </div>
+              )}
+              <button className="mb" style={{ marginTop: 10 }} onClick={load}>נסה שוב</button>
+            </div>
+          )}
+
+          {!loading && !err && org && (
+            <div style={{ fontSize: 12, color: 'var(--ink3)', padding: '0 12px 8px', direction: 'ltr', textAlign: 'right' }}>
+              {org.name}
+            </div>
+          )}
+
+          {!loading && !err && jobs && jobs.length === 0 && (
+            <div className="task-empty">אין פרויקטים פתוחים</div>
+          )}
+
+          {!loading && !err && jobs && jobs.map(j => (
+            <div key={j.id} className="lead-card" style={{ cursor: 'default' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="l-addr">{j.name}</div>
+                {j.location?.address && (
+                  <div className="l-client" style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'plaintext' }}>
+                    {j.location.address}
+                  </div>
+                )}
+              </div>
+              <span className="s-pill" style={{ background: 'var(--accent-soft)', color: 'var(--accent-deep)' }}>
+                #{j.number}
+              </span>
+            </div>
+          ))}
+        </>
       )}
-      {raw && (
-        <pre style={{ direction: 'ltr', textAlign: 'left', fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.5,
-          background: 'var(--input)', padding: 12, borderRadius: 10, overflow: 'auto', maxHeight: 280, color: 'var(--ink)' }}>
-          {raw}
-        </pre>
-      )}
-    </div>
+    </>
   )
 }
