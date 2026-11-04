@@ -4,6 +4,7 @@ import MeetingsView from './MeetingsView'
 import CashflowView from './CashflowView'
 import ReceiptsView from './ReceiptsView'
 import Icon from '../components/Icon'
+import JobTreadConnect from '../components/JobTreadConnect'
 
 const fmt=(n)=>`$${Number(n||0).toLocaleString()}`
 const fmtK=(n)=>{const v=Number(n||0);return v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}K`:`$${v}`}
@@ -137,6 +138,7 @@ export default function ManagerDashboard({session}){
         <div className="sec-hdr">ביצועי סוכנים</div>
         {agents.map(a=><AgentCard key={a.id} agent={a} onEdit={setEditing}/>)}
         {agents.length===0&&<div className="empty"><div className="empty-sub">סוכנים יופיעו לאחר כניסה ראשונה</div></div>}
+        <JobTreadConnect/>
       </div>}
 
       {/* MEETINGS TAB */}
